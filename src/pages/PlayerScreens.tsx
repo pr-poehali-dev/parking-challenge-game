@@ -1,4 +1,4 @@
-import { PlayerData, LeaderEntry, Screen, RARITIES, xpForLevel } from './parkingTypes';
+import { PlayerData, LeaderEntry, Screen, RARITIES, xpForLevel, UPGRADE_COSTS, UPGRADE_BONUS } from './parkingTypes';
 import { ProfileCard } from './LoginScreen';
 
 // ──────────────── GARAGE ────────────────
@@ -16,7 +16,10 @@ export function GarageScreen({ player, setScreen, setPlayer, notify }: GarageScr
       <div className="flex items-center gap-3">
         <button className="btn-game bg-white/10 text-white border-b-white/20 py-2 px-4" onClick={() => setScreen('menu')}>←</button>
         <h2 className="font-russo text-2xl text-yellow-400">🔧 Гараж</h2>
-        <div className="ml-auto coin-badge">🪙 {player.coins.toLocaleString()}</div>
+        <div className="ml-auto flex gap-2">
+          <div className="coin-badge">🪙 {player.coins.toLocaleString()}</div>
+          <div className="gem-badge">💎 {player.gems}</div>
+        </div>
       </div>
 
       <div className={`card-game-solid p-6 flex flex-col items-center gap-4 border-2 ${RARITIES[sel.rarity].border}`}>
@@ -25,23 +28,101 @@ export function GarageScreen({ player, setScreen, setPlayer, notify }: GarageScr
           <div className={`font-russo text-xl ${RARITIES[sel.rarity].color}`}>{sel.name}</div>
           <div className={`text-xs font-nunito font-bold uppercase tracking-wider mt-1 ${RARITIES[sel.rarity].color}`}>{RARITIES[sel.rarity].label}</div>
         </div>
-        <div className="w-full space-y-2">
-          {[
-            { label: '❤️ Прочность', val: sel.hp, max: sel.maxHp, color: '#34C759' },
-            { label: '⚡ Скорость', val: sel.speed, max: 6, color: '#FF6B35' },
-            { label: '🛡️ Броня', val: sel.armor, max: 4, color: '#007AFF' },
-          ].map(s => (
-            <div key={s.label}>
-              <div className="flex justify-between text-xs font-nunito font-bold mb-1">
-                <span className="text-white/50">{s.label}</span>
-                <span className="text-white">{s.max === 6 ? s.val.toFixed(1) : `${s.val}/${s.max}`}</span>
-              </div>
-              <div className="damage-bar">
-                <div className="hp-bar" style={{ width: `${(s.val / s.max) * 100}%`, backgroundColor: s.color }} />
-              </div>
-            </div>
-          ))}
+
+        {/* Прочность */}
+        <div className="w-full">
+          <div className="flex justify-between text-xs font-nunito font-bold mb-1">
+            <span className="text-white/50">❤️ Прочность</span>
+            <span className="text-white">{sel.hp} / {sel.maxHp} <span className="text-white/30">(Lv.{sel.hpLevel})</span></span>
+          </div>
+          <div className="damage-bar mb-2">
+            <div className="hp-bar" style={{ width: `${(sel.hp / sel.maxHp) * 100}%`, backgroundColor: '#34C759' }} />
+          </div>
+          {sel.hpLevel < UPGRADE_COSTS.hp.length ? (
+            <button className="w-full bg-green-500/15 border border-green-500/40 hover:bg-green-500/25 rounded-xl px-3 py-2 flex items-center justify-between transition-all"
+              onClick={() => {
+                const cost = UPGRADE_COSTS.hp[sel.hpLevel];
+                if (player.coins >= cost) {
+                  setPlayer(prev => ({ ...prev, coins: prev.coins - cost, cars: prev.cars.map((c, i) => {
+                    if (i !== prev.selectedCar) return c;
+                    const newLevel = c.hpLevel + 1;
+                    const newMaxHp = c.baseMaxHp + newLevel * UPGRADE_BONUS.hp;
+                    return { ...c, hpLevel: newLevel, maxHp: newMaxHp, hp: Math.min(c.hp, newMaxHp) };
+                  }) }));
+                  notify(`✅ Прочность улучшена! +${UPGRADE_BONUS.hp} HP`);
+                } else notify('❌ Недостаточно монет!');
+              }}>
+              <span className="font-russo text-green-400 text-xs">⬆ +{UPGRADE_BONUS.hp} HP</span>
+              <span className="font-russo text-yellow-400 text-xs">{UPGRADE_COSTS.hp[sel.hpLevel]} 🪙</span>
+            </button>
+          ) : (
+            <div className="text-center text-green-400 text-xs font-russo">✅ Макс. прочность</div>
+          )}
         </div>
+
+        {/* Броня */}
+        <div className="w-full">
+          <div className="flex justify-between text-xs font-nunito font-bold mb-1">
+            <span className="text-white/50">🛡️ Броня</span>
+            <span className="text-white">{sel.armor.toFixed(1)} <span className="text-white/30">(Lv.{sel.armorLevel})</span></span>
+          </div>
+          <div className="damage-bar mb-2">
+            <div className="hp-bar" style={{ width: `${(sel.armor / 6) * 100}%`, backgroundColor: '#007AFF' }} />
+          </div>
+          {sel.armorLevel < UPGRADE_COSTS.armor.length ? (
+            <button className="w-full bg-blue-500/15 border border-blue-500/40 hover:bg-blue-500/25 rounded-xl px-3 py-2 flex items-center justify-between transition-all"
+              onClick={() => {
+                const cost = UPGRADE_COSTS.armor[sel.armorLevel];
+                if (player.coins >= cost) {
+                  setPlayer(prev => ({ ...prev, coins: prev.coins - cost, cars: prev.cars.map((c, i) => {
+                    if (i !== prev.selectedCar) return c;
+                    const newLevel = c.armorLevel + 1;
+                    const newArmor = parseFloat((c.baseArmor + newLevel * UPGRADE_BONUS.armor).toFixed(1));
+                    return { ...c, armorLevel: newLevel, armor: newArmor };
+                  }) }));
+                  notify(`✅ Броня улучшена! +${UPGRADE_BONUS.armor}`);
+                } else notify('❌ Недостаточно монет!');
+              }}>
+              <span className="font-russo text-blue-400 text-xs">⬆ +{UPGRADE_BONUS.armor} брони</span>
+              <span className="font-russo text-yellow-400 text-xs">{UPGRADE_COSTS.armor[sel.armorLevel]} 🪙</span>
+            </button>
+          ) : (
+            <div className="text-center text-blue-400 text-xs font-russo">✅ Макс. броня</div>
+          )}
+        </div>
+
+        {/* Скорость */}
+        <div className="w-full">
+          <div className="flex justify-between text-xs font-nunito font-bold mb-1">
+            <span className="text-white/50">⚡ Скорость</span>
+            <span className="text-white">{sel.maxSpeed.toFixed(1)} <span className="text-white/30">(Lv.{sel.speedLevel})</span></span>
+          </div>
+          <div className="damage-bar mb-2">
+            <div className="hp-bar" style={{ width: `${(sel.maxSpeed / 7) * 100}%`, backgroundColor: '#FF6B35' }} />
+          </div>
+          {sel.speedLevel < UPGRADE_COSTS.speed.length ? (
+            <button className="w-full bg-orange-500/15 border border-orange-500/40 hover:bg-orange-500/25 rounded-xl px-3 py-2 flex items-center justify-between transition-all"
+              onClick={() => {
+                const cost = UPGRADE_COSTS.speed[sel.speedLevel];
+                if (player.gems >= cost) {
+                  setPlayer(prev => ({ ...prev, gems: prev.gems - cost, cars: prev.cars.map((c, i) => {
+                    if (i !== prev.selectedCar) return c;
+                    const newLevel = c.speedLevel + 1;
+                    const newMaxSpeed = parseFloat((c.baseMaxSpeed + newLevel * UPGRADE_BONUS.speed).toFixed(2));
+                    return { ...c, speedLevel: newLevel, maxSpeed: newMaxSpeed, speed: newMaxSpeed };
+                  }) }));
+                  notify(`✅ Скорость улучшена! +${UPGRADE_BONUS.speed}`);
+                } else notify('❌ Недостаточно кристаллов!');
+              }}>
+              <span className="font-russo text-orange-400 text-xs">⬆ +{UPGRADE_BONUS.speed} скорости</span>
+              <span className="font-russo text-purple-400 text-xs">{UPGRADE_COSTS.speed[sel.speedLevel]} 💎</span>
+            </button>
+          ) : (
+            <div className="text-center text-orange-400 text-xs font-russo">✅ Макс. скорость</div>
+          )}
+        </div>
+
+        {/* Ремонт */}
         {sel.hp < sel.maxHp ? (
           <button className="btn-green w-full"
             onClick={() => {

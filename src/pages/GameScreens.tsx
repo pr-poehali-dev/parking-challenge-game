@@ -99,6 +99,7 @@ export function GameScreen({
           playerColor={player.cars[player.selectedCar]?.color}
           playerBodyColor={player.cars[player.selectedCar]?.bodyColor}
           playerEmoji={player.cars[player.selectedCar]?.emoji}
+          playerMaxSpeed={player.cars[player.selectedCar]?.maxSpeed}
           upgrades={player.upgrades ?? { nitro: false, gps: false, bumper: false, autoRepair: false, magnet: false, turbo: false, shield: false }}
           onRoundEnd={handleRoundEnd}
           onGameEnd={handleGameEnd}

@@ -84,7 +84,7 @@ export function spawnParticles(
   }
 }
 
-export function createInitialState(playerName: string, playerHp?: number, playerMaxHp?: number, playerColor?: string, playerBodyColor?: string, playerEmoji?: string): GameState {
+export function createInitialState(playerName: string, playerHp?: number, playerMaxHp?: number, playerColor?: string, playerBodyColor?: string, playerEmoji?: string, playerMaxSpeed?: number): GameState {
   const totalCars = 10;
   const totalSpots = 10;
 
@@ -124,7 +124,7 @@ export function createInitialState(playerName: string, playerHp?: number, player
       y: CENTER_Y + Math.sin(orbitAngle) * orbitRadius,
       angle: startAngle,
       speed: 0,
-      maxSpeed: i === 0 ? 3.0 : 1.4 + Math.random() * 0.6,
+      maxSpeed: i === 0 ? (playerMaxSpeed ?? 3.0) : 1.4 + Math.random() * 0.6,
       color: i === 0 && playerColor ? playerColor : color.body,
       bodyColor: i === 0 && playerBodyColor ? playerBodyColor : color.roof,
       hp: i === 0 ? (playerHp ?? 100) : 100,

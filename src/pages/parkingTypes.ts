@@ -94,24 +94,42 @@ export interface CarData {
   rarity: 'common' | 'rare' | 'epic' | 'legendary';
   hp: number;
   maxHp: number;
+  baseMaxHp: number;
   speed: number;
   maxSpeed: number;
+  baseMaxSpeed: number;
   armor: number;
+  baseArmor: number;
   owned: boolean;
   price: number;
   repairCost: number;
+  hpLevel: number;
+  armorLevel: number;
+  speedLevel: number;
 }
 
+export const UPGRADE_COSTS = {
+  hp:    [100, 200, 350, 500, 750],
+  armor: [150, 300, 500, 750, 1000],
+  speed: [50, 100, 200],
+} as const;
+
+export const UPGRADE_BONUS = {
+  hp:    20,
+  armor: 0.5,
+  speed: 0.3,
+} as const;
+
 export const INITIAL_CARS: CarData[] = [
-  { id: 0, name: 'Жигуль',      emoji: '🚗',  color: '#FF2D55', bodyColor: '#CC0033', rarity: 'common',    hp: 100, maxHp: 100, speed: 3,   maxSpeed: 3,   armor: 1,   owned: true,  price: 0,    repairCost: 50 },
-  { id: 1, name: 'Такси',       emoji: '🚕',  color: '#FFD600', bodyColor: '#CC9900', rarity: 'common',    hp: 100, maxHp: 100, speed: 3.2, maxSpeed: 3.2, armor: 1,   owned: false, price: 500,  repairCost: 60 },
-  { id: 2, name: 'Внедорожник', emoji: '🚙',  color: '#34C759', bodyColor: '#248A3D', rarity: 'rare',      hp: 140, maxHp: 140, speed: 2.8, maxSpeed: 2.8, armor: 2,   owned: false, price: 1200, repairCost: 100 },
-  { id: 3, name: 'Болид',       emoji: '🏎️', color: '#FF6B35', bodyColor: '#CC4400', rarity: 'epic',      hp: 80,  maxHp: 80,  speed: 4.5, maxSpeed: 4.5, armor: 0.5, owned: false, price: 3000, repairCost: 200 },
-  { id: 4, name: 'Патруль',     emoji: '🚓',  color: '#007AFF', bodyColor: '#0055CC', rarity: 'rare',      hp: 130, maxHp: 130, speed: 3.5, maxSpeed: 3.5, armor: 1.5, owned: false, price: 1500, repairCost: 120 },
-  { id: 5, name: 'Скорая',      emoji: '🚑',  color: '#FFFFFF', bodyColor: '#CCCCCC', rarity: 'rare',      hp: 150, maxHp: 150, speed: 3.0, maxSpeed: 3.0, armor: 1.5, owned: false, price: 1800, repairCost: 130 },
-  { id: 6, name: 'Пожарка',     emoji: '🚒',  color: '#FF3B30', bodyColor: '#AA0000', rarity: 'epic',      hp: 200, maxHp: 200, speed: 2.5, maxSpeed: 2.5, armor: 3,   owned: false, price: 4000, repairCost: 250 },
-  { id: 7, name: 'Пикап',       emoji: '🛻',  color: '#5AC8FA', bodyColor: '#0088CC', rarity: 'common',    hp: 110, maxHp: 110, speed: 3.1, maxSpeed: 3.1, armor: 1.2, owned: false, price: 800,  repairCost: 70 },
-  { id: 8, name: 'Ракета',      emoji: '🚀',  color: '#AF52DE', bodyColor: '#7B2FA8', rarity: 'legendary', hp: 90,  maxHp: 90,  speed: 5.5, maxSpeed: 5.5, armor: 0.3, owned: false, price: 9999, repairCost: 500 },
+  { id: 0, name: 'Жигуль',      emoji: '🚗',  color: '#FF2D55', bodyColor: '#CC0033', rarity: 'common',    hp: 100, maxHp: 100, baseMaxHp: 100, speed: 3,   maxSpeed: 3,   baseMaxSpeed: 3,   armor: 1,   baseArmor: 1,   owned: true,  price: 0,    repairCost: 50,  hpLevel: 0, armorLevel: 0, speedLevel: 0 },
+  { id: 1, name: 'Такси',       emoji: '🚕',  color: '#FFD600', bodyColor: '#CC9900', rarity: 'common',    hp: 100, maxHp: 100, baseMaxHp: 100, speed: 3.2, maxSpeed: 3.2, baseMaxSpeed: 3.2, armor: 1,   baseArmor: 1,   owned: false, price: 500,  repairCost: 60,  hpLevel: 0, armorLevel: 0, speedLevel: 0 },
+  { id: 2, name: 'Внедорожник', emoji: '🚙',  color: '#34C759', bodyColor: '#248A3D', rarity: 'rare',      hp: 140, maxHp: 140, baseMaxHp: 140, speed: 2.8, maxSpeed: 2.8, baseMaxSpeed: 2.8, armor: 2,   baseArmor: 2,   owned: false, price: 1200, repairCost: 100, hpLevel: 0, armorLevel: 0, speedLevel: 0 },
+  { id: 3, name: 'Болид',       emoji: '🏎️', color: '#FF6B35', bodyColor: '#CC4400', rarity: 'epic',      hp: 80,  maxHp: 80,  baseMaxHp: 80,  speed: 4.5, maxSpeed: 4.5, baseMaxSpeed: 4.5, armor: 0.5, baseArmor: 0.5, owned: false, price: 3000, repairCost: 200, hpLevel: 0, armorLevel: 0, speedLevel: 0 },
+  { id: 4, name: 'Патруль',     emoji: '🚓',  color: '#007AFF', bodyColor: '#0055CC', rarity: 'rare',      hp: 130, maxHp: 130, baseMaxHp: 130, speed: 3.5, maxSpeed: 3.5, baseMaxSpeed: 3.5, armor: 1.5, baseArmor: 1.5, owned: false, price: 1500, repairCost: 120, hpLevel: 0, armorLevel: 0, speedLevel: 0 },
+  { id: 5, name: 'Скорая',      emoji: '🚑',  color: '#FFFFFF', bodyColor: '#CCCCCC', rarity: 'rare',      hp: 150, maxHp: 150, baseMaxHp: 150, speed: 3.0, maxSpeed: 3.0, baseMaxSpeed: 3.0, armor: 1.5, baseArmor: 1.5, owned: false, price: 1800, repairCost: 130, hpLevel: 0, armorLevel: 0, speedLevel: 0 },
+  { id: 6, name: 'Пожарка',     emoji: '🚒',  color: '#FF3B30', bodyColor: '#AA0000', rarity: 'epic',      hp: 200, maxHp: 200, baseMaxHp: 200, speed: 2.5, maxSpeed: 2.5, baseMaxSpeed: 2.5, armor: 3,   baseArmor: 3,   owned: false, price: 4000, repairCost: 250, hpLevel: 0, armorLevel: 0, speedLevel: 0 },
+  { id: 7, name: 'Пикап',       emoji: '🛻',  color: '#5AC8FA', bodyColor: '#0088CC', rarity: 'common',    hp: 110, maxHp: 110, baseMaxHp: 110, speed: 3.1, maxSpeed: 3.1, baseMaxSpeed: 3.1, armor: 1.2, baseArmor: 1.2, owned: false, price: 800,  repairCost: 70,  hpLevel: 0, armorLevel: 0, speedLevel: 0 },
+  { id: 8, name: 'Ракета',      emoji: '🚀',  color: '#AF52DE', bodyColor: '#7B2FA8', rarity: 'legendary', hp: 90,  maxHp: 90,  baseMaxHp: 90,  speed: 5.5, maxSpeed: 5.5, baseMaxSpeed: 5.5, armor: 0.3, baseArmor: 0.3, owned: false, price: 9999, repairCost: 500, hpLevel: 0, armorLevel: 0, speedLevel: 0 },
 ];
 
 export const PLAYER_EMOJIS = ['😎', '🤠', '😤', '🥷', '👨‍🚀', '🧑‍🎤', '🥸', '😈'];
@@ -153,7 +171,14 @@ export function loadProfile(): PlayerData | null {
     const saved = JSON.parse(raw) as PlayerData;
     const mergedCars = INITIAL_CARS.map(ic => {
       const saved_car = saved.cars?.find(c => c.id === ic.id);
-      return saved_car ? { ...ic, owned: saved_car.owned, hp: saved_car.hp } : ic;
+      if (!saved_car) return ic;
+      const hpLevel = saved_car.hpLevel ?? 0;
+      const armorLevel = saved_car.armorLevel ?? 0;
+      const speedLevel = saved_car.speedLevel ?? 0;
+      const maxHp = ic.baseMaxHp + hpLevel * UPGRADE_BONUS.hp;
+      const armor = ic.baseArmor + armorLevel * UPGRADE_BONUS.armor;
+      const maxSpeed = ic.baseMaxSpeed + speedLevel * UPGRADE_BONUS.speed;
+      return { ...ic, owned: saved_car.owned, hp: Math.min(saved_car.hp, maxHp), maxHp, armor, maxSpeed, speed: maxSpeed, hpLevel, armorLevel, speedLevel };
     });
     const mergedUpgrades = { ...DEFAULT_PLAYER.upgrades, ...(saved.upgrades ?? {}) };
     return { ...saved, cars: mergedCars, upgrades: mergedUpgrades };
