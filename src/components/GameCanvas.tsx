@@ -138,12 +138,18 @@ export default function GameCanvas({ playerName, playerHp, playerMaxHp, playerCo
           if (keys.has('ArrowLeft')) player.angle -= turnSpeed;
           if (keys.has('ArrowRight')) player.angle += turnSpeed;
 
+          // Clockwise orbit tangent angle at player position
+          const orbitTangent = Math.atan2(player.x - CENTER_X, -(player.y - CENTER_Y)) + Math.PI;
+          const angleDiff = Math.abs(((player.angle - orbitTangent) + Math.PI * 3) % (Math.PI * 2) - Math.PI);
+          const againstOrbit = angleDiff > Math.PI / 2;
+
           if (keys.has('ArrowUp')) {
-            player.speed = Math.min(player.speed + 0.15, player.maxSpeed * hpFactor);
+            const capSpeed = againstOrbit ? player.maxSpeed * hpFactor * 0.35 : player.maxSpeed * hpFactor;
+            player.speed = Math.min(player.speed + 0.15, capSpeed);
           } else if (keys.has('ArrowDown')) {
-            player.speed = Math.max(player.speed - 0.12, -0.3);
+            player.speed = Math.max(player.speed - 0.2, -1);
           } else {
-            player.speed *= player.speed < 0 ? 0.7 : 0.96;
+            player.speed *= 0.96;
           }
 
           // Force minimum movement during driving phase
@@ -229,9 +235,14 @@ export default function GameCanvas({ playerName, playerHp, playerMaxHp, playerCo
           if (keys.has('ArrowRight')) player.angle += turnSpeed;
           // Nitro works in signal phase — Space key
           const nitroBoost = (upgrades.nitro && keys.has(' ')) ? 1.4 : 1;
-          if (keys.has('ArrowUp')) player.speed = Math.min(player.speed + 0.18 * nitroBoost, player.maxSpeed * hpFactor * nitroBoost);
-          else if (keys.has('ArrowDown')) player.speed = Math.max(player.speed - 0.12, -0.3);
-          else player.speed *= player.speed < 0 ? 0.7 : 0.95;
+          const orbitTangentS = Math.atan2(player.x - CENTER_X, -(player.y - CENTER_Y)) + Math.PI;
+          const angleDiffS = Math.abs(((player.angle - orbitTangentS) + Math.PI * 3) % (Math.PI * 2) - Math.PI);
+          const againstOrbitS = angleDiffS > Math.PI / 2;
+          if (keys.has('ArrowUp')) {
+            const capSpeedS = againstOrbitS ? player.maxSpeed * hpFactor * 0.35 : player.maxSpeed * hpFactor * nitroBoost;
+            player.speed = Math.min(player.speed + 0.18 * nitroBoost, capSpeedS);
+          } else if (keys.has('ArrowDown')) player.speed = Math.max(player.speed - 0.2, -1);
+          else player.speed *= 0.95;
           // Nitro particles
           if (upgrades.nitro && keys.has(' ') && keys.has('ArrowUp') && Math.random() < 0.4) {
             spawnParticles(state, player.x, player.y, '#FFD600', 3);
