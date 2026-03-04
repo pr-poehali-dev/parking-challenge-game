@@ -75,31 +75,37 @@ const PARKING_AREA_H = 200;
 const SPOT_W = 32;
 const SPOT_H = 54;
 
-// Parking zone bounds (with padding)
+// Parking zone visual bounds
 const PARK_LEFT   = CENTER_X - PARKING_AREA_W / 2 - 15;
 const PARK_RIGHT  = CENTER_X + PARKING_AREA_W / 2 + 15;
 const PARK_TOP    = CENTER_Y - PARKING_AREA_H / 2 - 15;
 const PARK_BOTTOM = CENTER_Y + PARKING_AREA_H / 2 + 15;
 
+// Exclusion zone — cars must stay outside this area before signal
+// Significantly larger than visual zone so no one can "park near the border"
+const EXCL_PAD = 80;
+const EXCL_LEFT   = PARK_LEFT   - EXCL_PAD;
+const EXCL_RIGHT  = PARK_RIGHT  + EXCL_PAD;
+const EXCL_TOP    = PARK_TOP    - EXCL_PAD;
+const EXCL_BOTTOM = PARK_BOTTOM + EXCL_PAD;
+
 function isInsideParkingZone(x: number, y: number): boolean {
   return x > PARK_LEFT && x < PARK_RIGHT && y > PARK_TOP && y < PARK_BOTTOM;
 }
 
-// Push car out of parking zone when signal is not active
+// Push car firmly outside the exclusion zone before signal
 function blockParkingZone(car: Car) {
-  const margin = 22;
-  if (car.x > PARK_LEFT - margin && car.x < PARK_RIGHT + margin &&
-      car.y > PARK_TOP - margin && car.y < PARK_BOTTOM + margin) {
-    // Find nearest exit direction
-    const dLeft   = car.x - (PARK_LEFT - margin);
-    const dRight  = (PARK_RIGHT + margin) - car.x;
-    const dTop    = car.y - (PARK_TOP - margin);
-    const dBottom = (PARK_BOTTOM + margin) - car.y;
+  if (car.x > EXCL_LEFT && car.x < EXCL_RIGHT &&
+      car.y > EXCL_TOP  && car.y < EXCL_BOTTOM) {
+    const dLeft   = car.x - EXCL_LEFT;
+    const dRight  = EXCL_RIGHT  - car.x;
+    const dTop    = car.y - EXCL_TOP;
+    const dBottom = EXCL_BOTTOM - car.y;
     const minD = Math.min(dLeft, dRight, dTop, dBottom);
-    if (minD === dLeft)   { car.x = PARK_LEFT - margin; car.speed *= -0.3; }
-    else if (minD === dRight)  { car.x = PARK_RIGHT + margin; car.speed *= -0.3; }
-    else if (minD === dTop)    { car.y = PARK_TOP - margin; car.speed *= -0.3; }
-    else                       { car.y = PARK_BOTTOM + margin; car.speed *= -0.3; }
+    if      (minD === dLeft)   { car.x = EXCL_LEFT   - 2; car.speed = Math.abs(car.speed) * 0.5; }
+    else if (minD === dRight)  { car.x = EXCL_RIGHT  + 2; car.speed = Math.abs(car.speed) * 0.5; }
+    else if (minD === dTop)    { car.y = EXCL_TOP    - 2; car.speed = Math.abs(car.speed) * 0.5; }
+    else                       { car.y = EXCL_BOTTOM + 2; car.speed = Math.abs(car.speed) * 0.5; }
   }
 }
 
@@ -145,13 +151,19 @@ function createInitialState(playerName: string): GameState {
   const totalCars = 10;
   const totalSpots = 10;
 
+  // Spots are packed tightly toward center so fewer spots = compact cluster
   const spots: ParkingSpot[] = [];
+  const SPOT_COLS = 5;
+  const SPOT_ROW_GAP = 80;
+  const SPOT_COL_GAP = 66;
+  const GRID_W = (SPOT_COLS - 1) * SPOT_COL_GAP;
+  const GRID_H = 1 * SPOT_ROW_GAP;
   for (let i = 0; i < totalSpots; i++) {
-    const col = i % 5;
-    const row = Math.floor(i / 5);
+    const col = i % SPOT_COLS;
+    const row = Math.floor(i / SPOT_COLS);
     spots.push({
-      x: CENTER_X - PARKING_AREA_W / 2 + 36 + col * 72,
-      y: CENTER_Y - PARKING_AREA_H / 2 + 20 + row * 90,
+      x: CENTER_X - GRID_W / 2 + col * SPOT_COL_GAP,
+      y: CENTER_Y - GRID_H / 2 + row * SPOT_ROW_GAP,
       occupied: false,
       carId: null,
       available: true,
@@ -367,7 +379,7 @@ function drawParkingArea(ctx: CanvasRenderingContext2D, spots: ParkingSpot[], si
   ctx.fillStyle = '#252535';
   // Border: red stripes when closed, yellow dashed when open
   if (!signalActive) {
-    ctx.strokeStyle = 'rgba(255,45,85,0.7)';
+    ctx.strokeStyle = 'rgba(255,45,85,0.8)';
     ctx.lineWidth = 4;
     ctx.setLineDash([10, 6]);
   } else {
@@ -376,23 +388,24 @@ function drawParkingArea(ctx: CanvasRenderingContext2D, spots: ParkingSpot[], si
     ctx.setLineDash([8, 4]);
   }
   ctx.beginPath();
-  ctx.roundRect(
-    CENTER_X - PARKING_AREA_W / 2 - 15,
-    CENTER_Y - PARKING_AREA_H / 2 - 15,
-    PARKING_AREA_W + 30,
-    PARKING_AREA_H + 30,
-    16
-  );
+  ctx.roundRect(PARK_LEFT, PARK_TOP, PARK_RIGHT - PARK_LEFT, PARK_BOTTOM - PARK_TOP, 16);
   ctx.fill();
   ctx.stroke();
   ctx.setLineDash([]);
 
-  // "Closed" label when signal not active
+  // Exclusion zone outer boundary (dashed red halo) when closed
   if (!signalActive) {
-    ctx.fillStyle = 'rgba(255,45,85,0.5)';
+    ctx.strokeStyle = 'rgba(255,45,85,0.25)';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([6, 8]);
+    ctx.beginPath();
+    ctx.roundRect(EXCL_LEFT, EXCL_TOP, EXCL_RIGHT - EXCL_LEFT, EXCL_BOTTOM - EXCL_TOP, 24);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = 'rgba(255,45,85,0.55)';
     ctx.font = 'bold 11px Russo One, sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('🚫 ВЪЕЗД ЗАКРЫТ', CENTER_X, CENTER_Y - PARKING_AREA_H / 2 - 20);
+    ctx.fillText('🚫 ВЪЕЗД ЗАКРЫТ', CENTER_X, PARK_TOP - 6);
   }
 
   ctx.restore();
@@ -642,6 +655,9 @@ interface Upgrades {
   gps: boolean;
   bumper: boolean;
   autoRepair: boolean;
+  magnet: boolean;
+  turbo: boolean;
+  shield: boolean;
 }
 
 interface Props {
@@ -781,11 +797,8 @@ export default function GameCanvas({ playerName, upgrades, onRoundEnd, onGameEnd
           if (keys.has('ArrowLeft')) player.angle -= 0.05;
           if (keys.has('ArrowRight')) player.angle += 0.05;
 
-          // Nitro: Space key during signal phase
-          const nitroBoost = (upgrades.nitro && state.signal && keys.has(' ')) ? 1.25 : 1;
-
           if (keys.has('ArrowUp')) {
-            player.speed = Math.min(player.speed + 0.15, player.maxSpeed * hpFactor * nitroBoost);
+            player.speed = Math.min(player.speed + 0.15, player.maxSpeed * hpFactor);
           } else if (keys.has('ArrowDown')) {
             player.speed = Math.max(player.speed - 0.2, -1);
           } else {
@@ -794,14 +807,12 @@ export default function GameCanvas({ playerName, upgrades, onRoundEnd, onGameEnd
 
           // Force minimum movement — no waiting at all during driving phase
           if (!state.signal) {
-            // Tighter requirement near parking zone
-            const nearParking =
-              player.x > PARK_LEFT - 60 && player.x < PARK_RIGHT + 60 &&
-              player.y > PARK_TOP - 60 && player.y < PARK_BOTTOM + 60;
-            const minSpeed = nearParking ? 1.5 * hpFactor : 0.8 * hpFactor;
-            if (player.speed < minSpeed) {
-              player.speed = minSpeed;
-            }
+            // Near the exclusion zone boundary = extra min speed
+            const nearExcl =
+              player.x > EXCL_LEFT - 40 && player.x < EXCL_RIGHT + 40 &&
+              player.y > EXCL_TOP  - 40 && player.y < EXCL_BOTTOM + 40;
+            const minSpeed = nearExcl ? 1.6 * hpFactor : 0.8 * hpFactor;
+            if (player.speed < minSpeed) player.speed = minSpeed;
           }
 
           player.x += Math.sin(player.angle) * player.speed;
@@ -869,15 +880,21 @@ export default function GameCanvas({ playerName, upgrades, onRoundEnd, onGameEnd
         // Bots continue
         state.cars.forEach(car => botAI(car, state, dt));
 
-        // Player can still drive
+        // Player can still drive during signal phase
         const player = state.cars.find(c => c.isPlayer && !c.eliminated);
         if (player && !player.parked) {
           const hpFactor = 0.4 + (player.hp / player.maxHp) * 0.6;
           if (keys.has('ArrowLeft')) player.angle -= 0.05;
           if (keys.has('ArrowRight')) player.angle += 0.05;
-          if (keys.has('ArrowUp')) player.speed = Math.min(player.speed + 0.15, player.maxSpeed * hpFactor);
+          // Nitro works HERE — in signal phase — Space key
+          const nitroBoost = (upgrades.nitro && keys.has(' ')) ? 1.4 : 1;
+          if (keys.has('ArrowUp')) player.speed = Math.min(player.speed + 0.18 * nitroBoost, player.maxSpeed * hpFactor * nitroBoost);
           else if (keys.has('ArrowDown')) player.speed = Math.max(player.speed - 0.2, -1);
           else player.speed *= 0.95;
+          // Nitro particles
+          if (upgrades.nitro && keys.has(' ') && keys.has('ArrowUp') && Math.random() < 0.4) {
+            spawnParticles(state, player.x, player.y, '#FFD600', 3);
+          }
           player.x += Math.sin(player.angle) * player.speed;
           player.y -= Math.cos(player.angle) * player.speed;
           player.x = Math.max(20, Math.min(CANVAS_W - 20, player.x));
@@ -888,12 +905,20 @@ export default function GameCanvas({ playerName, upgrades, onRoundEnd, onGameEnd
               .map((s, i) => ({ s, i }))
               .filter(({ s }) => !s.occupied);
             for (const { s, i } of freeSpots) {
-              if (Math.hypot(s.x - player.x, s.y - player.y) < 25) {
-                player.x = s.x; player.y = s.y;
-                player.parked = true; player.parkSpot = i; player.speed = 0;
-                s.occupied = true; s.carId = player.id;
-                spawnParticles(state, player.x, player.y, '#FFD600', 15);
-                break;
+              // Magnet upgrade: extended snap radius
+              const snapRadius = upgrades.magnet ? 55 : 25;
+              if (Math.hypot(s.x - player.x, s.y - player.y) < snapRadius) {
+                // Magnet: smoothly pull toward spot
+                if (upgrades.magnet && Math.hypot(s.x - player.x, s.y - player.y) > 25) {
+                  player.x += (s.x - player.x) * 0.25;
+                  player.y += (s.y - player.y) * 0.25;
+                } else {
+                  player.x = s.x; player.y = s.y;
+                  player.parked = true; player.parkSpot = i; player.speed = 0;
+                  s.occupied = true; s.carId = player.id;
+                  spawnParticles(state, player.x, player.y, '#FFD600', 15);
+                  break;
+                }
               }
             }
           }

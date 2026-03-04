@@ -19,7 +19,15 @@ interface PlayerData {
   bestPosition: number;
   cars: CarData[];
   selectedCar: number;
-  upgrades: { nitro: boolean; gps: boolean; bumper: boolean; autoRepair: boolean };
+  upgrades: {
+    nitro: boolean;
+    gps: boolean;
+    bumper: boolean;
+    autoRepair: boolean;
+    magnet: boolean;
+    turbo: boolean;
+    shield: boolean;
+  };
 }
 
 // Simple hash for password (not cryptographic, just protection against casual theft)
@@ -91,7 +99,8 @@ function loadProfile(): PlayerData | null {
       const saved_car = saved.cars?.find(c => c.id === ic.id);
       return saved_car ? { ...ic, owned: saved_car.owned, hp: saved_car.hp } : ic;
     });
-    return { ...saved, cars: mergedCars };
+    const mergedUpgrades = { ...DEFAULT_PLAYER.upgrades, ...(saved.upgrades ?? {}) };
+    return { ...saved, cars: mergedCars, upgrades: mergedUpgrades };
   } catch {
     return null;
   }
@@ -116,7 +125,7 @@ const DEFAULT_PLAYER: PlayerData = {
   bestPosition: 99,
   cars: INITIAL_CARS,
   selectedCar: 0,
-  upgrades: { nitro: false, gps: false, bumper: false, autoRepair: false },
+  upgrades: { nitro: false, gps: false, bumper: false, autoRepair: false, magnet: false, turbo: false, shield: false },
 };
 
 // ──────────────── PROFILE CARD COMPONENT ────────────────
@@ -524,7 +533,7 @@ export default function Index() {
         <GameCanvas
           key={gameKey}
           playerName={player.name}
-          upgrades={player.upgrades ?? { nitro: false, gps: false, bumper: false, autoRepair: false }}
+          upgrades={player.upgrades ?? { nitro: false, gps: false, bumper: false, autoRepair: false, magnet: false, turbo: false, shield: false }}
           onRoundEnd={handleRoundEnd}
           onGameEnd={handleGameEnd}
           keys={keys}
@@ -680,11 +689,14 @@ export default function Index() {
       { coins: 1000, gems: 10 }, { coins: 3000, gems: 25 },
       { coins: 7000, gems: 50 }, { coins: 20000, gems: 120 },
     ];
-    const upgrades: { name: string; desc: string; price: number; icon: string; key: keyof typeof player.upgrades }[] = [
-      { name: 'Нитро-ускорение', desc: '+25% скорость при сигнале (Space)', price: 200, icon: '⚡', key: 'nitro' },
-      { name: 'Усиленный бампер', desc: '-30% урона от столкновений', price: 350, icon: '🛡️', key: 'bumper' },
-      { name: 'GPS-радар', desc: 'Подсвечивает ближайшее свободное место', price: 500, icon: '📡', key: 'gps' },
-      { name: 'Авто-ремонт', desc: '+15 HP после каждого раунда', price: 400, icon: '🔧', key: 'autoRepair' },
+    const upgrades: { name: string; desc: string; price: number; icon: string; key: keyof typeof player.upgrades; tag?: string }[] = [
+      { name: 'Нитро-ускорение', desc: 'Зажми Space при сигнале — рывок +40% скорости', price: 150, icon: '⚡', key: 'nitro' },
+      { name: 'GPS-радар', desc: 'Золотая стрелка к ближайшему свободному месту', price: 200, icon: '📡', key: 'gps' },
+      { name: 'Усиленный бампер', desc: '-30% урона при столкновениях', price: 250, icon: '🛡️', key: 'bumper' },
+      { name: 'Авто-ремонт', desc: 'Восстанавливает +15 HP после каждого раунда', price: 300, icon: '🔧', key: 'autoRepair' },
+      { name: 'Магнит парковки', desc: 'Автоматически притягивает к месту в радиусе 50px', price: 400, icon: '🧲', key: 'magnet', tag: 'НОВИНКА' },
+      { name: 'Турбо-старт', desc: 'После сигнала мгновенный разгон x2 на 2 сек', price: 350, icon: '🚀', key: 'turbo', tag: 'НОВИНКА' },
+      { name: 'Силовое поле', desc: 'Первый удар за раунд — без урона', price: 500, icon: '🔵', key: 'shield', tag: 'ХИТ' },
     ];
 
     return (
@@ -741,7 +753,10 @@ export default function Index() {
             {upgrades.map((upg, i) => {
               const owned = player.upgrades[upg.key];
               return (
-                <div key={i} className={`card-game p-4 flex items-center gap-4 ${owned ? 'border border-green-500/30 bg-green-500/5' : ''}`}>
+                <div key={i} className={`card-game p-4 flex items-center gap-3 relative overflow-hidden ${owned ? 'border border-green-500/30 bg-green-500/5' : ''}`}>
+                  {upg.tag && !owned && (
+                    <div className="absolute top-1 right-1 bg-orange-500 text-white font-russo text-[9px] px-1.5 py-0.5 rounded-full">{upg.tag}</div>
+                  )}
                   <div className="text-3xl">{upg.icon}</div>
                   <div className="flex-1">
                     <div className="font-russo text-white text-sm">{upg.name}</div>
