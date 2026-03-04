@@ -1,5 +1,5 @@
 import { useEffect, useRef, useCallback } from 'react';
-import { Car, GameState, GameCanvasProps, CANVAS_W, CANVAS_H, CENTER_X, EXCL_LEFT, EXCL_RIGHT, EXCL_TOP, EXCL_BOTTOM } from './gameTypes';
+import { Car, GameState, GameCanvasProps, CANVAS_W, CANVAS_H, CENTER_X, CENTER_Y, EXCL_LEFT, EXCL_RIGHT, EXCL_TOP, EXCL_BOTTOM } from './gameTypes';
 import { createInitialState, spawnParticles, blockParkingZone, resolveAllCollisions } from './gameLogic';
 import { drawAsphalt, drawParkingArea, drawCar, drawParticles, drawSignal, drawRoundEnd, drawHUD, drawGpsOverlay } from './gameRenderer';
 
