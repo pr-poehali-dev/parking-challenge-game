@@ -104,18 +104,18 @@ export function GarageScreen({ player, setScreen, setPlayer, notify }: GarageScr
             <button className="w-full bg-orange-500/15 border border-orange-500/40 hover:bg-orange-500/25 rounded-xl px-3 py-2 flex items-center justify-between transition-all"
               onClick={() => {
                 const cost = UPGRADE_COSTS.speed[sel.speedLevel];
-                if (player.gems >= cost) {
-                  setPlayer(prev => ({ ...prev, gems: prev.gems - cost, cars: prev.cars.map((c, i) => {
+                if (player.coins >= cost) {
+                  setPlayer(prev => ({ ...prev, coins: prev.coins - cost, cars: prev.cars.map((c, i) => {
                     if (i !== prev.selectedCar) return c;
                     const newLevel = c.speedLevel + 1;
                     const newMaxSpeed = parseFloat((c.baseMaxSpeed + newLevel * UPGRADE_BONUS.speed).toFixed(2));
                     return { ...c, speedLevel: newLevel, maxSpeed: newMaxSpeed, speed: newMaxSpeed };
                   }) }));
                   notify(`✅ Скорость улучшена! +${UPGRADE_BONUS.speed}`);
-                } else notify('❌ Недостаточно кристаллов!');
+                } else notify('❌ Недостаточно монет!');
               }}>
               <span className="font-russo text-orange-400 text-xs">⬆ +{UPGRADE_BONUS.speed} скорости</span>
-              <span className="font-russo text-purple-400 text-xs">{UPGRADE_COSTS.speed[sel.speedLevel]} 💎</span>
+              <span className="font-russo text-yellow-400 text-xs">{UPGRADE_COSTS.speed[sel.speedLevel]} 🪙</span>
             </button>
           ) : (
             <div className="text-center text-orange-400 text-xs font-russo">✅ Макс. скорость</div>

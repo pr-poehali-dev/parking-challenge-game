@@ -141,9 +141,9 @@ export default function GameCanvas({ playerName, playerHp, playerMaxHp, playerCo
           if (keys.has('ArrowUp')) {
             player.speed = Math.min(player.speed + 0.15, player.maxSpeed * hpFactor);
           } else if (keys.has('ArrowDown')) {
-            player.speed = Math.max(player.speed - 0.2, -1);
+            player.speed = Math.max(player.speed - 0.12, -0.3);
           } else {
-            player.speed *= 0.96;
+            player.speed *= player.speed < 0 ? 0.7 : 0.96;
           }
 
           // Force minimum movement during driving phase
@@ -230,8 +230,8 @@ export default function GameCanvas({ playerName, playerHp, playerMaxHp, playerCo
           // Nitro works in signal phase — Space key
           const nitroBoost = (upgrades.nitro && keys.has(' ')) ? 1.4 : 1;
           if (keys.has('ArrowUp')) player.speed = Math.min(player.speed + 0.18 * nitroBoost, player.maxSpeed * hpFactor * nitroBoost);
-          else if (keys.has('ArrowDown')) player.speed = Math.max(player.speed - 0.2, -1);
-          else player.speed *= 0.95;
+          else if (keys.has('ArrowDown')) player.speed = Math.max(player.speed - 0.12, -0.3);
+          else player.speed *= player.speed < 0 ? 0.7 : 0.95;
           // Nitro particles
           if (upgrades.nitro && keys.has(' ') && keys.has('ArrowUp') && Math.random() < 0.4) {
             spawnParticles(state, player.x, player.y, '#FFD600', 3);

@@ -111,7 +111,7 @@ export interface CarData {
 export const UPGRADE_COSTS = {
   hp:    [100, 200, 350, 500, 750],
   armor: [150, 300, 500, 750, 1000],
-  speed: [50, 100, 200],
+  speed: [300, 600, 1000],
 } as const;
 
 export const UPGRADE_BONUS = {
