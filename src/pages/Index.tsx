@@ -274,26 +274,29 @@ function ProfileCard({ player, xpInLevel, xpNeeded, onEmojiChange, onNameChange 
 }
 
 // ──────────────── LOGIN SCREEN COMPONENT ────────────────
-function LoginScreen({ player, isReturningPlayer, onContinue, onRegister, onReset }: {
-  player: PlayerData;
-  isReturningPlayer: boolean;
-  onContinue: (password: string) => Promise<string | null>;
+function LoginScreen({ onLogin, onRegister }: {
+  onLogin: (name: string, password: string) => Promise<string | null>;
   onRegister: (name: string, emoji: string, password: string) => Promise<string | null>;
-  onReset: () => void;
 }) {
-  const [mode, setMode] = useState<'login' | 'register'>(isReturningPlayer ? 'login' : 'register');
+  const [tab, setTab] = useState<'login' | 'register'>('login');
   const [inputName, setInputName] = useState('');
-  const [selectedEmoji, setSelectedEmoji] = useState(player.emoji);
+  const [selectedEmoji, setSelectedEmoji] = useState('😎');
   const [password, setPassword] = useState('');
   const [passwordConfirm, setPasswordConfirm] = useState('');
   const [showPwd, setShowPwd] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
+  const switchTab = (t: 'login' | 'register') => {
+    setTab(t); setError(''); setPassword(''); setPasswordConfirm('');
+  };
+
   const handleLogin = async () => {
+    const name = inputName.trim();
+    if (!name) { setError('Введи ник'); return; }
     if (!password) { setError('Введи пароль'); return; }
     setLoading(true); setError('');
-    const err = await onContinue(password);
+    const err = await onLogin(name, password);
     setLoading(false);
     if (err) setError(err);
   };
@@ -310,24 +313,19 @@ function LoginScreen({ player, isReturningPlayer, onContinue, onRegister, onRese
     if (err) setError(err);
   };
 
-  const BgCars = () => (
-    <div className="absolute inset-0 pointer-events-none overflow-hidden">
-      {[{ em: '🚗', cls: 'top-8 left-8', d: '0s' }, { em: '🏎️', cls: 'top-16 right-12', d: '1.2s' },
-        { em: '🚕', cls: 'bottom-16 left-16', d: '2s' }, { em: '🚙', cls: 'bottom-12 right-10', d: '0.6s' }]
-        .map((item, i) => <div key={i} className={`absolute text-5xl animate-float ${item.cls}`} style={{ animationDelay: item.d }}>{item.em}</div>)}
-      <div className="absolute top-1/3 left-1/4 w-72 h-72 rounded-full bg-yellow-500/5 blur-3xl" />
-      <div className="absolute bottom-1/3 right-1/4 w-56 h-56 rounded-full bg-orange-500/5 blur-3xl" />
-    </div>
-  );
-
   const inputCls = "w-full bg-white/10 border-2 border-white/20 focus:border-yellow-400/60 rounded-2xl px-4 py-3 font-nunito text-white text-base outline-none transition-all placeholder:text-white/20";
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-4 relative overflow-hidden">
-      <BgCars />
-      <div className="relative z-10 flex flex-col items-center gap-5 w-full max-w-sm animate-fade-in">
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        {[{ em: '🚗', cls: 'top-8 left-8', d: '0s' }, { em: '🏎️', cls: 'top-16 right-12', d: '1.2s' },
+          { em: '🚕', cls: 'bottom-16 left-16', d: '2s' }, { em: '🚙', cls: 'bottom-12 right-10', d: '0.6s' }]
+          .map((item, i) => <div key={i} className={`absolute text-5xl animate-float ${item.cls}`} style={{ animationDelay: item.d }}>{item.em}</div>)}
+        <div className="absolute top-1/3 left-1/4 w-72 h-72 rounded-full bg-yellow-500/5 blur-3xl" />
+        <div className="absolute bottom-1/3 right-1/4 w-56 h-56 rounded-full bg-orange-500/5 blur-3xl" />
+      </div>
 
-        {/* Logo */}
+      <div className="relative z-10 flex flex-col items-center gap-5 w-full max-w-sm animate-fade-in">
         <div className="text-center">
           <div className="text-7xl mb-2 animate-bounce-in">👑</div>
           <h1 className="font-russo text-4xl text-yellow-400 leading-none" style={{ textShadow: '0 0 30px rgba(255,214,0,0.6)' }}>КОРОЛЬ</h1>
@@ -335,24 +333,36 @@ function LoginScreen({ player, isReturningPlayer, onContinue, onRegister, onRese
           <p className="text-white/30 text-xs font-nunito font-bold tracking-widest uppercase mt-1">Захвати место — стань королём!</p>
         </div>
 
-        {/* ── RETURNING PLAYER: simple password ── */}
-        {mode === 'login' && (
-          <div className="card-game-solid p-6 flex flex-col gap-4 w-full">
-            <div className="text-center">
-              <div className="text-5xl mb-2">{player.emoji}</div>
-              <div className="text-white/40 font-nunito text-sm">С возвращением! 👋</div>
-              <div className="font-russo text-yellow-400 text-xl mt-0.5">{player.name}</div>
-              <div className="text-white/30 text-xs font-nunito">Lv.{player.level} · {player.wins} побед</div>
-            </div>
+        {/* Tabs */}
+        <div className="flex w-full gap-1 bg-white/5 rounded-2xl p-1">
+          <button
+            className={`flex-1 py-2.5 rounded-xl font-russo text-sm transition-all ${tab === 'login' ? 'bg-yellow-400 text-gray-900' : 'text-white/50 hover:text-white'}`}
+            onClick={() => switchTab('login')}>
+            Войти
+          </button>
+          <button
+            className={`flex-1 py-2.5 rounded-xl font-russo text-sm transition-all ${tab === 'register' ? 'bg-yellow-400 text-gray-900' : 'text-white/50 hover:text-white'}`}
+            onClick={() => switchTab('register')}>
+            Регистрация
+          </button>
+        </div>
 
+        <div className="card-game-solid p-6 flex flex-col gap-4 w-full">
+          {/* ── LOGIN ── */}
+          {tab === 'login' && (<>
+            <input type="text" value={inputName}
+              onChange={e => { setInputName(e.target.value); setError(''); }}
+              onKeyDown={e => e.key === 'Enter' && handleLogin()}
+              placeholder="Твой ник"
+              maxLength={16}
+              autoFocus
+              className={inputCls}
+            />
             <div className="relative">
-              <input
-                type={showPwd ? 'text' : 'password'}
-                value={password}
+              <input type={showPwd ? 'text' : 'password'} value={password}
                 onChange={e => { setPassword(e.target.value); setError(''); }}
                 onKeyDown={e => e.key === 'Enter' && handleLogin()}
                 placeholder="Пароль"
-                autoFocus
                 className={inputCls}
               />
               <button onClick={() => setShowPwd(v => !v)}
@@ -360,26 +370,14 @@ function LoginScreen({ player, isReturningPlayer, onContinue, onRegister, onRese
                 {showPwd ? '🙈' : '👁️'}
               </button>
             </div>
-
             {error && <div className="text-red-400 text-xs font-nunito text-center">{error}</div>}
-
             <button className="btn-yellow w-full text-lg py-3" onClick={handleLogin} disabled={loading}>
-              {loading ? '⏳ Вход...' : '▶ Войти'}
+              {loading ? '⏳ Входим...' : '▶ Войти'}
             </button>
+          </>)}
 
-            <button className="text-white/20 text-xs font-nunito text-center hover:text-red-400/60 transition-colors"
-              onClick={onReset}>
-              Это не я — начать с другим аккаунтом
-            </button>
-          </div>
-        )}
-
-        {/* ── NEW PLAYER: registration ── */}
-        {mode === 'register' && (
-          <div className="card-game-solid p-6 flex flex-col gap-4 w-full">
-            <div className="font-russo text-white text-center text-lg">Создай аккаунт</div>
-
-            {/* Avatar */}
+          {/* ── REGISTER ── */}
+          {tab === 'register' && (<>
             <div>
               <div className="text-white/40 text-xs font-nunito mb-2 text-center uppercase tracking-wider">Аватар</div>
               <div className="flex gap-2 flex-wrap justify-center">
@@ -391,15 +389,13 @@ function LoginScreen({ player, isReturningPlayer, onContinue, onRegister, onRese
                 ))}
               </div>
             </div>
-
             <input type="text" value={inputName}
               onChange={e => { setInputName(e.target.value); setError(''); }}
-              placeholder="Имя в игре (2–16 символов)"
+              placeholder="Придумай ник (2–16 символов)"
               maxLength={16}
               autoFocus
               className={inputCls}
             />
-
             <div className="relative">
               <input type={showPwd ? 'text' : 'password'} value={password}
                 onChange={e => { setPassword(e.target.value); setError(''); }}
@@ -411,28 +407,18 @@ function LoginScreen({ player, isReturningPlayer, onContinue, onRegister, onRese
                 {showPwd ? '🙈' : '👁️'}
               </button>
             </div>
-
             <input type={showPwd ? 'text' : 'password'} value={passwordConfirm}
               onChange={e => { setPasswordConfirm(e.target.value); setError(''); }}
               onKeyDown={e => e.key === 'Enter' && handleRegister()}
               placeholder="Повтори пароль"
               className={inputCls}
             />
-
             {error && <div className="text-red-400 text-xs font-nunito text-center">{error}</div>}
-
             <button className="btn-yellow w-full text-lg py-3" onClick={handleRegister} disabled={loading}>
-              {loading ? '⏳ Создаём аккаунт...' : '🚀 Создать и войти'}
+              {loading ? '⏳ Создаём...' : '🚀 Создать и войти'}
             </button>
-
-            {isReturningPlayer && (
-              <button className="text-white/30 text-xs font-nunito text-center hover:text-yellow-400/60 transition-colors"
-                onClick={() => { setMode('login'); setError(''); setPassword(''); }}>
-                ← Войти как {player.name}
-              </button>
-            )}
-          </div>
-        )}
+          </>)}
+        </div>
       </div>
     </div>
   );
@@ -528,30 +514,30 @@ export default function Index() {
   // ── LOGIN ──
   const renderLogin = () => (
     <LoginScreen
-      player={player}
-      isReturningPlayer={isReturningPlayer}
-      onContinue={async (password) => {
-        const data = await apiAuth('login', { name: player.name, password });
+      onLogin={async (name, password) => {
+        const data = await apiAuth('login', { name, password });
         if (data.error) return data.error;
-        const serverProfile = data.profile;
+        const sp = data.profile;
         const merged: PlayerData = {
-          ...player,
+          ...DEFAULT_PLAYER,
+          name: sp.name ?? name,
+          emoji: sp.emoji ?? '😎',
           password,
-          emoji: serverProfile.emoji ?? player.emoji,
-          coins: serverProfile.coins ?? player.coins,
-          gems: serverProfile.gems ?? player.gems,
-          xp: serverProfile.xp ?? player.xp,
-          wins: serverProfile.wins ?? player.wins,
-          gamesPlayed: serverProfile.gamesPlayed ?? player.gamesPlayed,
-          bestPosition: serverProfile.bestPosition ?? player.bestPosition,
-          selectedCar: serverProfile.selectedCar ?? player.selectedCar,
-          level: levelFromXp(serverProfile.xp ?? player.xp),
-          cars: INITIAL_CARS.map(c => ({ ...c, owned: (serverProfile.ownedCars ?? [0]).includes(c.id) })),
-          upgrades: { ...DEFAULT_PLAYER.upgrades, ...(serverProfile.upgrades ?? {}) },
+          coins: sp.coins ?? 1000,
+          gems: sp.gems ?? 50,
+          xp: sp.xp ?? 0,
+          wins: sp.wins ?? 0,
+          gamesPlayed: sp.gamesPlayed ?? 0,
+          bestPosition: sp.bestPosition ?? 99,
+          selectedCar: sp.selectedCar ?? 0,
+          level: levelFromXp(sp.xp ?? 0),
+          cars: INITIAL_CARS.map(c => ({ ...c, owned: (sp.ownedCars ?? [0]).includes(c.id) })),
+          upgrades: { ...DEFAULT_PLAYER.upgrades, ...(sp.upgrades ?? {}) },
         };
         setPlayer(merged);
         saveProfile(merged);
-        setSession(player.name, password);
+        setIsReturningPlayer(true);
+        setSession(name, password);
         setScreen('menu');
         return null;
       }}
@@ -565,12 +551,6 @@ export default function Index() {
         setSession(name, password);
         setScreen('menu');
         return null;
-      }}
-      onReset={() => {
-        localStorage.removeItem(SAVE_KEY);
-        clearSession();
-        setPlayer(DEFAULT_PLAYER);
-        setIsReturningPlayer(false);
       }}
     />
   );

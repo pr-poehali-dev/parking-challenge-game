@@ -176,9 +176,11 @@ function createInitialState(playerName: string): GameState {
     const orbitRadius = 270 + (i % 3) * 20;
     const orbitAngle = (i / totalCars) * Math.PI * 2;
     const color = CAR_COLORS[i];
-    // For player (i===0): angle points in tangent direction of clockwise orbit
-    // tangent of clockwise orbit at angle θ is (θ + π/2)
-    const startAngle = orbitAngle + Math.PI / 2;
+    // Clockwise orbit tangent in canvas coords (y-down):
+    // position = (cos θ, sin θ)·R, velocity direction = (-sin θ, cos θ)
+    // Car moves as: dx = sin(angle), dy = -cos(angle)
+    // To match: sin(a)=-sinθ, -cos(a)=cosθ  →  a = θ + π
+    const startAngle = orbitAngle + Math.PI;
     cars.push({
       id: i,
       x: CENTER_X + Math.cos(orbitAngle) * orbitRadius,
@@ -741,7 +743,7 @@ export default function GameCanvas({ playerName, upgrades, onRoundEnd, onGameEnd
     car.orbitAngle += car.orbitSpeed * (0.5 + (car.hp / car.maxHp) * 0.5);
     car.x = CENTER_X + Math.cos(car.orbitAngle) * effectiveRadius;
     car.y = CENTER_Y + Math.sin(car.orbitAngle) * effectiveRadius;
-    car.angle = car.orbitAngle + Math.PI / 2 * Math.sign(car.orbitSpeed);
+    car.angle = car.orbitAngle + Math.PI;
 
     // Drift marks
     if (Math.random() < 0.02) {
@@ -1025,8 +1027,7 @@ export default function GameCanvas({ playerName, upgrades, onRoundEnd, onGameEnd
             car.orbitAngle = orbitAngle;
             car.x = CENTER_X + Math.cos(orbitAngle) * car.orbitRadius;
             car.y = CENTER_Y + Math.sin(orbitAngle) * car.orbitRadius;
-            // Tangent direction of clockwise orbit = orbitAngle + PI/2
-            car.angle = orbitAngle + Math.PI / 2;
+            car.angle = orbitAngle + Math.PI;
           });
 
           // Reset spots occupied status
