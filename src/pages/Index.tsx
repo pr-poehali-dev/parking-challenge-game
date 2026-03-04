@@ -448,6 +448,7 @@ export default function Index() {
   const [notification, setNotification] = useState<string | null>(null);
   const [keys, setKeys] = useState<Set<string>>(new Set());
   const [onlineLeaders, setOnlineLeaders] = useState<LeaderEntry[]>([]);
+  const [inGamePhase, setInGamePhase] = useState<'playing' | 'roundEnd'>('playing');
   const keysRef = useRef<Set<string>>(new Set());
 
   // Init YaGames SDK on mount
@@ -503,7 +504,9 @@ export default function Index() {
 
   const handleRoundEnd = useCallback((round: number, isPlayerEliminated: boolean) => {
     setGameRound(round);
+    setInGamePhase('roundEnd');
     if (isPlayerEliminated) notify('❌ Тебя вышибли! Паркуйся быстрее!');
+    setTimeout(() => setInGamePhase('playing'), 3000);
   }, []);
 
   const handleGameEnd = useCallback((position: number) => {
@@ -609,7 +612,7 @@ export default function Index() {
         </button>
 
         <div className="flex flex-col gap-3 w-full">
-          <button className="btn-yellow w-full text-xl py-5 animate-fade-in" onClick={() => { setGameKey(k => k + 1); setGameRound(1); setScreen('game'); }}>
+          <button className="btn-yellow w-full text-xl py-5 animate-fade-in" onClick={() => { setGameKey(k => k + 1); setGameRound(1); setInGamePhase('playing'); setScreen('game'); }}>
             🚀 ИГРАТЬ
           </button>
           <div className="grid grid-cols-2 gap-3">
@@ -634,7 +637,7 @@ export default function Index() {
         <div className="coin-badge">🪙 {player.coins.toLocaleString()}</div>
       </div>
 
-      <div className="w-full max-w-3xl">
+      <div className="w-full max-w-3xl relative">
         <GameCanvas
           key={gameKey}
           playerName={player.name}
@@ -643,6 +646,33 @@ export default function Index() {
           onGameEnd={handleGameEnd}
           keys={keys}
         />
+        {/* Repair button overlay during round end */}
+        {inGamePhase === 'roundEnd' && !gameResult && (() => {
+          const car = player.cars[player.selectedCar];
+          if (!car || car.hp >= car.maxHp) return null;
+          const repairCost = Math.round(car.repairCost * (1 - car.hp / car.maxHp));
+          const healAmt = Math.round(car.maxHp * 0.4);
+          return (
+            <div className="absolute bottom-16 left-1/2 -translate-x-1/2 z-10 animate-bounce-in">
+              <button
+                className="btn-green px-6 py-3 text-base font-russo shadow-2xl"
+                onClick={() => {
+                  if (player.coins >= repairCost) {
+                    setPlayer(prev => {
+                      const newCars = prev.cars.map((c, i) => i === prev.selectedCar ? { ...c, hp: Math.min(c.maxHp, c.hp + healAmt) } : c);
+                      return { ...prev, coins: prev.coins - repairCost, cars: newCars };
+                    });
+                    notify(`🔧 Машина подлатана! +${healAmt} HP`);
+                  } else {
+                    notify('❌ Недостаточно монет!');
+                  }
+                }}
+              >
+                🔧 Починить {Math.round((1 - car.hp / car.maxHp) * 100)}% — {repairCost} 🪙
+              </button>
+            </div>
+          );
+        })()}
       </div>
 
       {/* Mobile controls */}
@@ -697,7 +727,7 @@ export default function Index() {
             </div>
           </div>
           <div className="flex gap-3 w-full">
-            <button className="btn-yellow flex-1" onClick={() => { setGameKey(k => k + 1); setGameRound(1); setScreen('game'); }}>🔄 Ещё раз</button>
+            <button className="btn-yellow flex-1" onClick={() => { setGameKey(k => k + 1); setGameRound(1); setInGamePhase('playing'); setScreen('game'); }}>🔄 Ещё раз</button>
             <button className="btn-blue flex-1" onClick={() => setScreen('menu')}>🏠 Меню</button>
           </div>
         </div>

@@ -132,9 +132,9 @@ function resolveAllCollisions(cars: Car[], state: GameState) {
         // Damage based on relative speed (bumper upgrade reduces player damage)
         const relSpeed = Math.abs(a.speed - b.speed);
         if (relSpeed > 0.5) {
-          const dmg = relSpeed * 1.5;
-          const aDmg = a.isPlayer && state.playerBumper ? dmg * 0.7 : dmg;
-          const bDmg = b.isPlayer && state.playerBumper ? dmg * 0.7 : dmg;
+          const dmg = relSpeed * 0.6;
+          const aDmg = a.isPlayer && state.playerBumper ? dmg * 0.5 : dmg;
+          const bDmg = b.isPlayer && state.playerBumper ? dmg * 0.5 : dmg;
           a.hp = Math.max(0, a.hp - aDmg);
           b.hp = Math.max(0, b.hp - bDmg);
           if (relSpeed > 1.5) {
@@ -176,11 +176,14 @@ function createInitialState(playerName: string): GameState {
     const orbitRadius = 270 + (i % 3) * 20;
     const orbitAngle = (i / totalCars) * Math.PI * 2;
     const color = CAR_COLORS[i];
+    // For player (i===0): angle points in tangent direction of clockwise orbit
+    // tangent of clockwise orbit at angle θ is (θ + π/2)
+    const startAngle = orbitAngle + Math.PI / 2;
     cars.push({
       id: i,
       x: CENTER_X + Math.cos(orbitAngle) * orbitRadius,
       y: CENTER_Y + Math.sin(orbitAngle) * orbitRadius,
-      angle: orbitAngle + Math.PI / 2,
+      angle: startAngle,
       speed: 0,
       maxSpeed: i === 0 ? 3.0 : 1.4 + Math.random() * 0.6,
       color: color.body,
@@ -730,10 +733,14 @@ export default function GameCanvas({ playerName, upgrades, onRoundEnd, onGameEnd
       return;
     }
 
-    // Normal orbit
+    // Normal orbit — radius shrinks as fewer spots remain (the fewer spots, the tighter the circle)
+    const spotsLeft = state.spots.length;
+    const totalSpotsAtStart = 10;
+    const orbitShrink = 1 - (1 - spotsLeft / totalSpotsAtStart) * 0.45;
+    const effectiveRadius = car.orbitRadius * orbitShrink;
     car.orbitAngle += car.orbitSpeed * (0.5 + (car.hp / car.maxHp) * 0.5);
-    car.x = CENTER_X + Math.cos(car.orbitAngle) * car.orbitRadius;
-    car.y = CENTER_Y + Math.sin(car.orbitAngle) * car.orbitRadius;
+    car.x = CENTER_X + Math.cos(car.orbitAngle) * effectiveRadius;
+    car.y = CENTER_Y + Math.sin(car.orbitAngle) * effectiveRadius;
     car.angle = car.orbitAngle + Math.PI / 2 * Math.sign(car.orbitSpeed);
 
     // Drift marks
@@ -793,9 +800,11 @@ export default function GameCanvas({ playerName, upgrades, onRoundEnd, onGameEnd
         // Player control
         const player = state.cars.find(c => c.isPlayer && !c.eliminated);
         if (player && !player.parked) {
-          const hpFactor = 0.4 + (player.hp / player.maxHp) * 0.6;
-          if (keys.has('ArrowLeft')) player.angle -= 0.05;
-          if (keys.has('ArrowRight')) player.angle += 0.05;
+          // HP directly affects max speed: 30% HP = 55% speed, 100% HP = 100% speed
+          const hpFactor = 0.3 + (player.hp / player.maxHp) * 0.7;
+          const turnSpeed = 0.045 + (player.hp / player.maxHp) * 0.02;
+          if (keys.has('ArrowLeft')) player.angle -= turnSpeed;
+          if (keys.has('ArrowRight')) player.angle += turnSpeed;
 
           if (keys.has('ArrowUp')) {
             player.speed = Math.min(player.speed + 0.15, player.maxSpeed * hpFactor);
@@ -807,11 +816,10 @@ export default function GameCanvas({ playerName, upgrades, onRoundEnd, onGameEnd
 
           // Force minimum movement — no waiting at all during driving phase
           if (!state.signal) {
-            // Near the exclusion zone boundary = extra min speed
             const nearExcl =
               player.x > EXCL_LEFT - 40 && player.x < EXCL_RIGHT + 40 &&
               player.y > EXCL_TOP  - 40 && player.y < EXCL_BOTTOM + 40;
-            const minSpeed = nearExcl ? 1.6 * hpFactor : 0.8 * hpFactor;
+            const minSpeed = nearExcl ? 1.5 * hpFactor : 0.7 * hpFactor;
             if (player.speed < minSpeed) player.speed = minSpeed;
           }
 
@@ -883,9 +891,10 @@ export default function GameCanvas({ playerName, upgrades, onRoundEnd, onGameEnd
         // Player can still drive during signal phase
         const player = state.cars.find(c => c.isPlayer && !c.eliminated);
         if (player && !player.parked) {
-          const hpFactor = 0.4 + (player.hp / player.maxHp) * 0.6;
-          if (keys.has('ArrowLeft')) player.angle -= 0.05;
-          if (keys.has('ArrowRight')) player.angle += 0.05;
+          const hpFactor = 0.3 + (player.hp / player.maxHp) * 0.7;
+          const turnSpeed = 0.045 + (player.hp / player.maxHp) * 0.02;
+          if (keys.has('ArrowLeft')) player.angle -= turnSpeed;
+          if (keys.has('ArrowRight')) player.angle += turnSpeed;
           // Nitro works HERE — in signal phase — Space key
           const nitroBoost = (upgrades.nitro && keys.has(' ')) ? 1.4 : 1;
           if (keys.has('ArrowUp')) player.speed = Math.min(player.speed + 0.18 * nitroBoost, player.maxSpeed * hpFactor * nitroBoost);
@@ -1016,6 +1025,7 @@ export default function GameCanvas({ playerName, upgrades, onRoundEnd, onGameEnd
             car.orbitAngle = orbitAngle;
             car.x = CENTER_X + Math.cos(orbitAngle) * car.orbitRadius;
             car.y = CENTER_Y + Math.sin(orbitAngle) * car.orbitRadius;
+            // Tangent direction of clockwise orbit = orbitAngle + PI/2
             car.angle = orbitAngle + Math.PI / 2;
           });
 
