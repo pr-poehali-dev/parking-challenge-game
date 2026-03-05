@@ -222,7 +222,27 @@ def action_join(db, body: dict) -> dict:
         players = get_room_players(db, room_id)
 
     room = get_room(db, room_id)
-    room, players = maybe_start_room(db, room_id, room, players)
+
+    # force_start — клиент явно требует старта (таймаут истёк на клиенте)
+    force_start = bool(body.get('forceStart', False))
+    if force_start and room['status'] == 'waiting':
+        real_count = len([p for p in players if not p['is_bot']])
+        if real_count >= LOBBY_MIN_REAL:
+            add_bots(db, room_id, players, MAX_PLAYERS)
+            players = get_room_players(db, room_id)
+            now_ms2 = int(time.time() * 1000)
+            spots = make_spots(MAX_PLAYERS)
+            round_timer = now_ms2 + 7000
+            cur2 = db.cursor()
+            cur2.execute(
+                f"UPDATE {SCHEMA}.rooms SET status='playing', round=0, phase='driving', "
+                f"timer_end=%s, spots_json=%s, started_at=%s WHERE id=%s",
+                (round_timer, json.dumps(spots), now_ms2, room_id)
+            )
+            db.commit()
+            room = get_room(db, room_id)
+    else:
+        room, players = maybe_start_room(db, room_id, room, players)
 
     return resp({
         'roomId': room_id,

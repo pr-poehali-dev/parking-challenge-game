@@ -235,19 +235,43 @@ export default function Index() {
 
       if (data.status === 'waiting') {
         setIsLobby(true);
-        // Polling пока в лобби
         stopPolling();
         const lobbyRoomId = data.roomId;
+        const lobbyTimerEnd = data.timerEnd as number;
+        const currentPid = pid;
+
+        const startGame = (st: RoomState) => {
+          setRoomState(st);
+          setIsLobby(false);
+          setGameKey(k => k + 1);
+          setScreen('game');
+          stopPolling();
+          startGamePolling(lobbyRoomId, currentPid);
+        };
+
+        // Клиентский таймер: через 15с явно запрашиваем старт с ботами
+        const forceTimer = setTimeout(async () => {
+          try {
+            const st = await roomApi('join', {
+              playerId: currentPid,
+              name: displayName,
+              emoji: player.emoji,
+              color: player.cars[player.selectedCar]?.color ?? '#FF2D55',
+              bodyColor: player.cars[player.selectedCar]?.bodyColor ?? '#CC0033',
+              maxHp: player.cars[player.selectedCar]?.maxHp ?? 100,
+              forceStart: true,
+            });
+            if (st.status === 'playing') startGame(st as RoomState);
+          } catch { /* ignore */ }
+        }, Math.max(0, lobbyTimerEnd - Date.now()) + 500);
+
         pollRef.current = setInterval(async () => {
           try {
             const st = await roomApi('state', { roomId: lobbyRoomId });
             setRoomState(st as RoomState);
             if (st.status === 'playing') {
-              setIsLobby(false);
-              setGameKey(k => k + 1);
-              setScreen('game');
-              stopPolling();
-              startGamePolling(lobbyRoomId, pid);
+              clearTimeout(forceTimer);
+              startGame(st as RoomState);
             }
           } catch { /* ignore */ }
         }, 800);
