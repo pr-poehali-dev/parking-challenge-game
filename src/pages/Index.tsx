@@ -104,6 +104,9 @@ export default function Index() {
     if (autoLoginDone.current) return;
     autoLoginDone.current = true;
 
+    // Гарантированный сброс загрузки через 5 секунд (защита от зависания SDK)
+    const fallbackTimer = setTimeout(() => setIsLoading(false), 5000);
+
     const doAutoLogin = async () => {
       try {
         await initYandexGames();
@@ -144,6 +147,7 @@ export default function Index() {
           saveProfile(withBonus);
         }
       } finally {
+        clearTimeout(fallbackTimer);
         setIsLoading(false);
       }
     };

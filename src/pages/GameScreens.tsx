@@ -35,7 +35,7 @@ export function MenuScreen({ player, setScreen, onPlay, onQuestClaim }: MenuScre
           <p className="font-nunito text-white/40 text-xs mt-2 font-bold tracking-widest uppercase">Захвати место — стань королём!</p>
         </div>
 
-        <button className="card-game p-3 flex items-center gap-3 w-full animate-fade-in hover:border-yellow-400/30 transition-all" onClick={() => setScreen('login')}>
+        <button className="card-game p-3 flex items-center gap-3 w-full animate-fade-in hover:border-yellow-400/30 transition-all" onClick={() => setScreen('profile')}>
           <span className="text-3xl">{player.emoji}</span>
           <div className="flex-1 text-left">
             <div className="font-russo text-white text-sm">{player.name}</div>

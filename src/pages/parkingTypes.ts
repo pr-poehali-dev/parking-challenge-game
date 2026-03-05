@@ -55,12 +55,19 @@ interface YaSDK {
 
 let _ysdk: YaSDK | null = null;
 
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) => setTimeout(() => reject(new Error('timeout')), ms)),
+  ]);
+}
+
 export async function initYandexGames() {
   if (window.YaGames) {
     try {
-      _ysdk = await window.YaGames.init();
+      _ysdk = await withTimeout(window.YaGames.init(), 3000);
       window._yaSDK = _ysdk;
-    } catch { /* not in YG env */ }
+    } catch { /* not in YG env or timeout */ }
   }
 }
 
