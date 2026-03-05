@@ -92,6 +92,15 @@ export default function GameCanvas({ playerName, playerHp, playerMaxHp, playerCo
     stateRef.current.playerAutoRepair = upgrades.autoRepair;
   }, [upgrades]);
 
+  // Sync player HP from outside (after manual repair button)
+  useEffect(() => {
+    if (playerHp === undefined) return;
+    const playerCar = stateRef.current.cars.find(c => c.isPlayer);
+    if (playerCar) {
+      playerCar.hp = playerHp;
+    }
+  }, [playerHp]);
+
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
