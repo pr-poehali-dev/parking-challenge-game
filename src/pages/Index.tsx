@@ -169,7 +169,7 @@ export default function Index() {
 
   const handlePlay = () => {
     setGameKey(k => k + 1);
-    setGameRound(1);
+    setGameRound(0);
     setInGamePhase('playing');
     setGameResult(null);
     setScreen('game');

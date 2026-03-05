@@ -124,7 +124,9 @@ export function GameScreen({
     <div className="min-h-screen flex flex-col items-center justify-center p-4 gap-4">
       <div className="flex items-center justify-between w-full max-w-3xl">
         <button className="btn-red text-sm py-2 px-4" onClick={() => setScreen('menu')}>← Выйти</button>
-        <div className="font-russo text-yellow-400 text-lg">Раунд {gameRound}</div>
+        <div className={`font-russo text-lg ${gameRound === 0 ? 'text-green-400' : 'text-yellow-400'}`}>
+          {gameRound === 0 ? '🟢 Тренировка' : `Раунд ${gameRound}`}
+        </div>
         <div className="coin-badge">🪙 {player.coins.toLocaleString()}</div>
       </div>
 

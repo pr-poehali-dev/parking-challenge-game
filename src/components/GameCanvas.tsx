@@ -1,7 +1,13 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { Car, GameState, GameCanvasProps, CANVAS_W, CANVAS_H, CENTER_X, CENTER_Y, EXCL_LEFT, EXCL_RIGHT, EXCL_TOP, EXCL_BOTTOM } from './gameTypes';
-import { createInitialState, spawnParticles, blockParkingZone, resolveAllCollisions } from './gameLogic';
-import { drawAsphalt, drawParkingArea, drawCar, drawParticles, drawSignal, drawRoundEnd, drawHUD, drawGpsOverlay } from './gameRenderer';
+import { createInitialState, makeSpotsGrid, spawnParticles, blockParkingZone, resolveAllCollisions } from './gameLogic';
+import { drawAsphalt, drawParkingArea, drawCar, drawParticles, drawSignal, drawRoundEnd, drawWinner, drawHUD, drawGpsOverlay } from './gameRenderer';
+
+function randomRoundTimer(round: number): number {
+  // Round 0: a bit longer so players settle. Rounds 1+: 1–12s, skewed shorter in finals
+  if (round === 0) return 4 + Math.random() * 3;
+  return 1 + Math.random() * 11;
+}
 
 export default function GameCanvas({ playerName, playerHp, playerMaxHp, playerColor, playerBodyColor, playerEmoji, playerMaxSpeed, upgrades, onRoundEnd, onGameEnd, keys }: GameCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -18,16 +24,18 @@ export default function GameCanvas({ playerName, playerHp, playerMaxHp, playerCo
         .filter(({ s }) => !s.occupied);
 
       if (freeSpots.length > 0) {
-        // Hesitate based on health (weaker cars slower to react)
+        // Faster reaction: hesitate only briefly based on health
         const healthRatio = car.hp / car.maxHp;
-        const hesitateFrames = Math.floor((1 - healthRatio) * 60);
-        if (state.signalTimer < 8 - hesitateFrames / 60) {
-          const nearest = [...freeSpots].sort((a, b) => {
-            const da = Math.hypot(a.s.x - car.x, a.s.y - car.y);
-            const db = Math.hypot(b.s.x - car.x, b.s.y - car.y);
-            return da - db;
-          })[0];
-          if (nearest) car.targetSpot = nearest.i;
+        const hesitate = (1 - healthRatio) * 1.5; // max 1.5s delay for damaged bots
+        const isFinal = state.isFinalRound;
+        const reactionThreshold = isFinal ? 8 - 0.2 : 8 - hesitate; // almost instant in final
+        if (state.signalTimer < reactionThreshold) {
+          // Pick nearest spot, but sometimes pick random to create chaos
+          const pickRandom = Math.random() < 0.25;
+          const target = pickRandom
+            ? freeSpots[Math.floor(Math.random() * freeSpots.length)]
+            : [...freeSpots].sort((a, b) => Math.hypot(a.s.x - car.x, a.s.y - car.y) - Math.hypot(b.s.x - car.x, b.s.y - car.y))[0];
+          if (target) car.targetSpot = target.i;
         }
       }
     }
@@ -56,9 +64,10 @@ export default function GameCanvas({ playerName, playerHp, playerMaxHp, playerCo
         return;
       }
 
-      // Move directly toward spot
-      const hpFactor = 0.5 + (car.hp / car.maxHp) * 0.5;
-      const speed = Math.min(car.maxSpeed * hpFactor * 0.85, dist * 0.09);
+      // Move directly toward spot — faster, more aggressive
+      const hpFactor = 0.6 + (car.hp / car.maxHp) * 0.4;
+      const finalBoost = state.isFinalRound ? 1.2 : 1.0;
+      const speed = Math.min(car.maxSpeed * hpFactor * finalBoost, dist * 0.12);
       car.x += (dx / dist) * speed;
       car.y += (dy / dist) * speed;
       car.angle = Math.atan2(dx, -dy);
@@ -295,7 +304,13 @@ export default function GameCanvas({ playerName, playerHp, playerMaxHp, playerCo
 
         if (parkedCount >= availableSpots || state.signalTimer <= 0) {
           const unparked = activeCars.filter(c => !c.parked);
-          if (unparked.length > 0) {
+
+          // Round 0 is a practice round — no elimination
+          if (state.round === 0) {
+            state.eliminatedThisRound = null;
+            const playerCar0 = state.cars.find(c => c.isPlayer);
+            onRoundEnd(state.round, false, playerCar0?.hp ?? 100, playerCar0?.maxHp ?? 100);
+          } else if (unparked.length > 0) {
             // Player is always eliminated if not parked
             const playerUnparked = unparked.find(c => c.isPlayer);
             const eliminated = playerUnparked
@@ -336,7 +351,17 @@ export default function GameCanvas({ playerName, playerHp, playerMaxHp, playerCo
           }
 
           if (activeCars.length <= 1 || state.round >= state.maxRounds) {
-            onGameEnd(1, state.round);
+            // Show winner effect before calling onGameEnd
+            state.phase = 'winner';
+            state.winnerTimer = 3;
+            for (let i = 0; i < 5; i++) {
+              setTimeout(() => {
+                const player = state.cars.find(c => c.isPlayer);
+                if (player) spawnParticles(state, player.x, player.y, '#FFD600', 20);
+                spawnParticles(state, CENTER_X + (Math.random()-0.5)*200, CENTER_Y + (Math.random()-0.5)*150, '#FF6B35', 15);
+                spawnParticles(state, CENTER_X + (Math.random()-0.5)*200, CENTER_Y + (Math.random()-0.5)*150, '#AF52DE', 15);
+              }, i * 400);
+            }
             return;
           }
 
@@ -344,18 +369,34 @@ export default function GameCanvas({ playerName, playerHp, playerMaxHp, playerCo
           state.round++;
           state.signal = false;
           state.phase = 'driving';
-          state.timer = 3 + Math.random() * 4;
+          state.timer = randomRoundTimer(state.round);
 
-          // Remove one spot physically
-          const availableIdxs = state.spots
-            .map((s, i) => ({ s, i }))
-            .filter(({ s }) => s.available)
-            .map(({ i }) => i);
-          if (availableIdxs.length > 0) {
-            const removeIdx = availableIdxs[Math.floor(Math.random() * availableIdxs.length)];
-            state.spots.splice(removeIdx, 1);
-            state.spots.forEach(s => { s.carId = null; });
+          // Determine if this is the final round (2 cars left → 1 spot)
+          const nextActiveCars = state.cars.filter(c => !c.eliminated);
+          state.isFinalRound = nextActiveCars.length === 2;
+
+          if (state.round === 1) {
+            // After round 0: remove 2 spots (go from 10 spots to 9 active cars need 9 spots → remove 1)
+            // Actually remove exactly 1 spot so there's 9 spots for 9 remaining cars would be fine,
+            // but we need 9 cars, 9 spots still no elimination — so remove 1 more giving 9 cars, 9-1=9? No.
+            // Round 0 ends: 10 cars, 10 spots, no elim. Round 1: still 10 cars, need 9 spots → remove 1
+            const availableIdxs = state.spots.map((s, i) => ({ s, i })).filter(({ s }) => s.available).map(({ i }) => i);
+            if (availableIdxs.length > 0) {
+              const removeIdx = availableIdxs[Math.floor(Math.random() * availableIdxs.length)];
+              state.spots.splice(removeIdx, 1);
+            }
+          } else if (state.isFinalRound) {
+            // Final round: exactly 1 spot for 2 cars
+            state.spots.splice(0, state.spots.length, ...makeSpotsGrid(1));
+          } else {
+            // Normal: remove one spot
+            const availableIdxs = state.spots.map((s, i) => ({ s, i })).filter(({ s }) => s.available).map(({ i }) => i);
+            if (availableIdxs.length > 0) {
+              const removeIdx = availableIdxs[Math.floor(Math.random() * availableIdxs.length)];
+              state.spots.splice(removeIdx, 1);
+            }
           }
+          state.spots.forEach(s => { s.carId = null; });
 
           // Auto-repair upgrade: heal player +15 HP between rounds
           if (state.playerAutoRepair) {
@@ -389,6 +430,19 @@ export default function GameCanvas({ playerName, playerHp, playerMaxHp, playerCo
 
           state.eliminatedThisRound = null;
         }
+      } else if (state.phase === 'winner') {
+        state.winnerTimer -= dt;
+
+        // Keep spawning particles
+        if (Math.random() < 0.15) {
+          spawnParticles(state, CENTER_X + (Math.random()-0.5)*300, CENTER_Y + (Math.random()-0.5)*200,
+            ['#FFD600','#FF6B35','#AF52DE','#34C759','#FF2D55'][Math.floor(Math.random()*5)], 8);
+        }
+
+        if (state.winnerTimer <= 0) {
+          onGameEnd(1, state.round);
+          return;
+        }
       }
 
       // === DRAW ===
@@ -419,6 +473,9 @@ export default function GameCanvas({ playerName, playerHp, playerMaxHp, playerCo
       }
       if (state.phase === 'roundEnd') {
         drawRoundEnd(ctx, state.eliminatedThisRound, state.round);
+      }
+      if (state.phase === 'winner') {
+        drawWinner(ctx, state.cars.find(c => c.isPlayer) ?? null, time);
       }
 
       drawHUD(ctx, state, time);

@@ -31,7 +31,7 @@ export interface ParkingSpot {
 }
 
 export interface GameState {
-  phase: 'driving' | 'signal' | 'parking' | 'roundEnd';
+  phase: 'driving' | 'signal' | 'parking' | 'roundEnd' | 'winner';
   round: number;
   maxRounds: number;
   spots: ParkingSpot[];
@@ -41,6 +41,8 @@ export interface GameState {
   signalTimer: number;
   roundEndTimer: number;
   eliminatedThisRound: Car | null;
+  isFinalRound: boolean;
+  winnerTimer: number;
   driftMarks: { x: number; y: number; angle: number; opacity: number }[];
   particles: { x: number; y: number; vx: number; vy: number; color: string; life: number; size: number }[];
   shakeTimer: number;

@@ -289,17 +289,71 @@ export function drawRoundEnd(ctx: CanvasRenderingContext2D, eliminated: Car | nu
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
 
-  if (eliminated) {
+  if (round === 0 && !eliminated) {
+    ctx.fillStyle = '#34C759';
+    ctx.font = 'bold 38px Russo One, sans-serif';
+    ctx.shadowColor = '#34C759';
+    ctx.shadowBlur = 20;
+    ctx.fillText('🏁 ТРЕНИРОВКА ЗАВЕРШЕНА!', CENTER_X, CENTER_Y - 30);
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = 'rgba(255,255,255,0.6)';
+    ctx.font = '20px Nunito, sans-serif';
+    ctx.fillText('Теперь начинается настоящий бой', CENTER_X, CENTER_Y + 20);
+  } else if (eliminated) {
     ctx.fillStyle = '#FF2D55';
     ctx.font = 'bold 42px Russo One, sans-serif';
     ctx.shadowColor = '#FF2D55';
     ctx.shadowBlur = 20;
     ctx.fillText(`${eliminated.emoji} ${eliminated.name} вылетает!`, CENTER_X, CENTER_Y - 30);
     ctx.shadowBlur = 0;
-
     ctx.fillStyle = 'rgba(255,255,255,0.7)';
     ctx.font = '20px Nunito, sans-serif';
-    ctx.fillText(`Раунд ${round - 1} завершён`, CENTER_X, CENTER_Y + 20);
+    ctx.fillText(`Раунд ${round} завершён`, CENTER_X, CENTER_Y + 20);
+  }
+
+  ctx.restore();
+}
+
+export function drawWinner(ctx: CanvasRenderingContext2D, player: Car | null, time: number) {
+  ctx.save();
+  ctx.fillStyle = 'rgba(0,0,0,0.75)';
+  ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  // Pulsing crown
+  const scale = 1 + Math.sin(time * 6) * 0.08;
+  ctx.save();
+  ctx.translate(CENTER_X, CENTER_Y - 80);
+  ctx.scale(scale, scale);
+  ctx.font = '80px Arial';
+  ctx.fillText('👑', 0, 0);
+  ctx.restore();
+
+  ctx.fillStyle = '#FFD600';
+  ctx.font = 'bold 52px Russo One, sans-serif';
+  ctx.shadowColor = '#FFD600';
+  ctx.shadowBlur = 40;
+  ctx.fillText('ПОБЕДА!', CENTER_X, CENTER_Y + 10);
+  ctx.shadowBlur = 0;
+
+  if (player) {
+    ctx.fillStyle = 'rgba(255,255,255,0.9)';
+    ctx.font = 'bold 26px Russo One, sans-serif';
+    ctx.fillText(`${player.emoji} ${player.name} — КОРОЛЬ ПАРКОВКИ!`, CENTER_X, CENTER_Y + 65);
+  }
+
+  // Stars flying
+  const starColors = ['#FFD600','#FF6B35','#AF52DE','#34C759'];
+  for (let i = 0; i < 6; i++) {
+    const angle = (i / 6) * Math.PI * 2 + time * 1.5;
+    const r = 130 + Math.sin(time * 3 + i) * 20;
+    const sx = CENTER_X + Math.cos(angle) * r;
+    const sy = CENTER_Y + Math.sin(angle) * r - 30;
+    ctx.fillStyle = starColors[i % starColors.length];
+    ctx.font = '22px Arial';
+    ctx.fillText('⭐', sx, sy);
   }
 
   ctx.restore();
@@ -316,10 +370,11 @@ export function drawHUD(ctx: CanvasRenderingContext2D, state: GameState, time: n
   ctx.roundRect(10, 10, 160, 70, 12);
   ctx.fill();
 
-  ctx.fillStyle = '#FFD600';
+  ctx.fillStyle = state.round === 0 ? '#34C759' : state.isFinalRound ? '#FF6B35' : '#FFD600';
   ctx.font = 'bold 14px Russo One, sans-serif';
   ctx.textAlign = 'left';
-  ctx.fillText(`РАУНД ${state.round} / ${state.maxRounds}`, 20, 32);
+  const roundLabel = state.round === 0 ? 'ТРЕНИРОВКА' : state.isFinalRound ? '🏆 ФИНАЛ!' : `РАУНД ${state.round} / ${state.maxRounds}`;
+  ctx.fillText(roundLabel, 20, 32);
 
   const activeCars = state.cars.filter(c => !c.eliminated).length;
   const activeSpots = state.spots.length;
@@ -336,10 +391,11 @@ export function drawHUD(ctx: CanvasRenderingContext2D, state: GameState, time: n
     const pulse = seconds <= 2 ? 0.8 + Math.sin(time * 10) * 0.2 : 1;
     ctx.translate(CENTER_X, 35);
     ctx.scale(pulse, pulse);
-    ctx.fillStyle = seconds <= 2 ? '#FF2D55' : '#FFD600';
+    const isUrgent = seconds <= 2;
+    ctx.fillStyle = state.round === 0 ? '#34C759' : state.isFinalRound ? (isUrgent ? '#FF2D55' : '#FF6B35') : (isUrgent ? '#FF2D55' : '#FFD600');
     ctx.font = 'bold 22px Russo One, sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText(`⏱ ${seconds}с`, 0, 0);
+    ctx.fillText(state.round === 0 ? `🟢 ${seconds}с` : state.isFinalRound ? `⚡ ${seconds}с` : `⏱ ${seconds}с`, 0, 0);
     ctx.restore();
   }
 

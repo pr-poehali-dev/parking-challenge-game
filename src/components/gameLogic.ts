@@ -84,18 +84,14 @@ export function spawnParticles(
   }
 }
 
-export function createInitialState(playerName: string, playerHp?: number, playerMaxHp?: number, playerColor?: string, playerBodyColor?: string, playerEmoji?: string, playerMaxSpeed?: number): GameState {
-  const totalCars = 10;
-  const totalSpots = 10;
-
-  // Spots packed tightly toward center so fewer spots = compact cluster
+export function makeSpotsGrid(count: number): ParkingSpot[] {
   const spots: ParkingSpot[] = [];
   const SPOT_COLS = 5;
   const SPOT_ROW_GAP = 80;
   const SPOT_COL_GAP = 66;
   const GRID_W = (SPOT_COLS - 1) * SPOT_COL_GAP;
-  const GRID_H = 1 * SPOT_ROW_GAP;
-  for (let i = 0; i < totalSpots; i++) {
+  const GRID_H = Math.ceil(count / SPOT_COLS) * SPOT_ROW_GAP - SPOT_ROW_GAP;
+  for (let i = 0; i < count; i++) {
     const col = i % SPOT_COLS;
     const row = Math.floor(i / SPOT_COLS);
     spots.push({
@@ -106,6 +102,15 @@ export function createInitialState(playerName: string, playerHp?: number, player
       available: true,
     });
   }
+  return spots;
+}
+
+export function createInitialState(playerName: string, playerHp?: number, playerMaxHp?: number, playerColor?: string, playerBodyColor?: string, playerEmoji?: string, playerMaxSpeed?: number): GameState {
+  const totalCars = 10;
+  // Round 0: everyone gets a spot (totalCars spots)
+  const totalSpots = totalCars;
+
+  const spots = makeSpotsGrid(totalSpots);
 
   const cars: Car[] = [];
   for (let i = 0; i < totalCars; i++) {
@@ -124,7 +129,7 @@ export function createInitialState(playerName: string, playerHp?: number, player
       y: CENTER_Y + Math.sin(orbitAngle) * orbitRadius,
       angle: startAngle,
       speed: 0,
-      maxSpeed: i === 0 ? (playerMaxSpeed ?? 3.0) : 1.4 + Math.random() * 0.6,
+      maxSpeed: i === 0 ? (playerMaxSpeed ?? 3.0) : 2.0 + Math.random() * 1.0,
       color: i === 0 && playerColor ? playerColor : color.body,
       bodyColor: i === 0 && playerBodyColor ? playerBodyColor : color.roof,
       hp: i === 0 ? (playerHp ?? 100) : 100,
@@ -133,7 +138,7 @@ export function createInitialState(playerName: string, playerHp?: number, player
       name: i === 0 ? playerName : CAR_NAMES[i],
       orbitRadius,
       orbitAngle,
-      orbitSpeed: 0.013 + Math.random() * 0.005, // always positive = clockwise
+      orbitSpeed: 0.016 + Math.random() * 0.008, // always positive = clockwise
       parked: false,
       parkSpot: null,
       targetSpot: null,
@@ -145,15 +150,17 @@ export function createInitialState(playerName: string, playerHp?: number, player
 
   return {
     phase: 'driving',
-    round: 1,
+    round: 0,
     maxRounds: 9,
     spots,
     cars,
     signal: false,
-    timer: 3 + Math.random() * 4,
+    timer: 4 + Math.random() * 3,
     signalTimer: 0,
     roundEndTimer: 0,
     eliminatedThisRound: null,
+    isFinalRound: false,
+    winnerTimer: 0,
     driftMarks: [],
     particles: [],
     shakeTimer: 0,
