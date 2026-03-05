@@ -49,13 +49,37 @@ export function usePlayerAuth(notify: (msg: string) => void) {
         let base: PlayerData;
 
         if (ya) {
-          base = (saved && saved.name) ? saved : {
-            ...DEFAULT_PLAYER,
-            name: (ya.name && ya.name.length >= 2 && ya.name.length <= 16) ? ya.name : 'Игрок',
-          };
+          // Пытаемся загрузить профиль из БД по ya_id
+          let serverProfile: PlayerData | null = null;
+          try {
+            const resp = await apiAuth('load_ya', { yaId: ya.id });
+            if (resp.profile) {
+              serverProfile = { ...DEFAULT_PLAYER, ...resp.profile, password: '' } as PlayerData;
+            }
+          } catch { /* ignore */ }
+
+          if (serverProfile) {
+            base = saved ? { ...serverProfile, cars: saved.cars ?? serverProfile.cars } : serverProfile;
+          } else {
+            base = (saved && saved.name) ? saved : {
+              ...DEFAULT_PLAYER,
+              name: (ya.name && ya.name.length >= 2 && ya.name.length <= 16) ? ya.name : 'Игрок',
+            };
+          }
           setLocalPlayerId(ya.id);
         } else if (saved && saved.name) {
-          base = saved;
+          // Пробуем подгрузить актуальные данные с сервера по anon_id
+          try {
+            const anonId = getOrCreateAnonId();
+            const resp = await apiAuth('load_anon', { playerId: anonId });
+            if (resp.profile && resp.profile.xp >= saved.xp) {
+              base = { ...saved, ...resp.profile, password: '' } as PlayerData;
+            } else {
+              base = saved;
+            }
+          } catch {
+            base = saved;
+          }
         } else {
           base = { ...DEFAULT_PLAYER, name: 'Игрок' };
           setNeedNickname(true);

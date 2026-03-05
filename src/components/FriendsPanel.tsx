@@ -1,40 +1,66 @@
-import { useState, useEffect } from 'react';
-import { getOrCreateAnonId } from '@/pages/parkingTypes';
+import { useState, useEffect, useCallback } from 'react';
+import { FRIENDS_URL, getOrCreateAnonId } from '@/pages/parkingTypes';
 
-const FRIENDS_KEY = 'parking_friends_v1';
-const FRIEND_BONUS_COINS = 0.1; // +10%
-const FRIEND_BONUS_XP = 0.15;   // +15%
+const FRIEND_BONUS_COINS = 0.1;
+const FRIEND_BONUS_XP = 0.15;
 
 export interface Friend {
+  id?: number;
   code: string;
   name: string;
   emoji: string;
-  addedAt: number;
-}
-
-export function getFriends(): Friend[] {
-  try { return JSON.parse(localStorage.getItem(FRIENDS_KEY) ?? '[]'); } catch { return []; }
-}
-
-function saveFriends(friends: Friend[]) {
-  localStorage.setItem(FRIENDS_KEY, JSON.stringify(friends));
-}
-
-export function getMyFriendCode(): string {
-  const id = getOrCreateAnonId();
-  // Берём уникальную часть после "anon_TIMESTAMP_" и дополняем до 6 символов
-  const parts = id.split('_');
-  const unique = parts.slice(2).join('') || parts[1] || id;
-  // Возвращаем ровно 6 символов в верхнем регистре
-  return unique.slice(0, 6).toUpperCase().padEnd(6, '0');
+  xp?: number;
+  wins?: number;
+  gamesTogether?: number;
 }
 
 export function hasFriendInRoom(roomPlayerIds: string[], myFriends: Friend[]): boolean {
-  const myCodes = myFriends.map(f => f.code);
-  return roomPlayerIds.some(id => myCodes.some(code => id.toUpperCase().includes(code)));
+  const codes = myFriends.map(f => f.code.toUpperCase());
+  return roomPlayerIds.some(id => codes.some(code => id.toUpperCase().includes(code)));
 }
 
 export const FRIEND_BONUS = { coins: FRIEND_BONUS_COINS, xp: FRIEND_BONUS_XP };
+
+function getPlayerId(): { yaId?: string; playerId?: string } {
+  const yaSDK = (window as Window & { _yaSDK?: { getPlayer: (o?: unknown) => Promise<{ getUniqueID: () => string }> } })._yaSDK;
+  if (yaSDK) {
+    return {};
+  }
+  return { playerId: getOrCreateAnonId() };
+}
+
+async function friendsApi(action: string, payload: Record<string, unknown>) {
+  const ids = getPlayerId();
+  const res = await fetch(FRIENDS_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action, ...ids, ...payload }),
+  });
+  return res.json();
+}
+
+// Хук для получения ya_id асинхронно
+async function resolveIds(): Promise<{ yaId?: string; playerId?: string }> {
+  const w = window as Window & { _yaSDK?: { getPlayer: (o?: { scopes?: boolean }) => Promise<{ getUniqueID: () => string }> } };
+  if (w._yaSDK) {
+    try {
+      const p = await w._yaSDK.getPlayer({ scopes: false });
+      const uid = p.getUniqueID();
+      if (uid) return { yaId: `ya_${uid}` };
+    } catch { /* ignore */ }
+  }
+  return { playerId: getOrCreateAnonId() };
+}
+
+async function friendsApiResolved(action: string, payload: Record<string, unknown>) {
+  const ids = await resolveIds();
+  const res = await fetch(FRIENDS_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action, ...ids, ...payload }),
+  });
+  return res.json();
+}
 
 interface FriendsPanelProps {
   playerName: string;
@@ -44,35 +70,56 @@ interface FriendsPanelProps {
 
 export default function FriendsPanel({ playerName, playerEmoji, notify }: FriendsPanelProps) {
   const [friends, setFriends] = useState<Friend[]>([]);
+  const [myCode, setMyCode] = useState<string>('...');
   const [inputCode, setInputCode] = useState('');
-  const [inputName, setInputName] = useState('');
   const [copied, setCopied] = useState(false);
-  const myCode = getMyFriendCode();
+  const [loading, setLoading] = useState(false);
+  const [listLoading, setListLoading] = useState(true);
 
-  useEffect(() => { setFriends(getFriends()); }, []);
+  const loadFriends = useCallback(async () => {
+    setListLoading(true);
+    try {
+      const data = await friendsApiResolved('list', {});
+      if (data.friends) setFriends(data.friends);
+      if (data.myCode) setMyCode(data.myCode);
+    } catch { /* ignore */ }
+    setListLoading(false);
+  }, []);
 
-  const handleAdd = () => {
+  useEffect(() => { loadFriends(); }, [loadFriends]);
+
+  const handleAdd = async () => {
     const code = inputCode.trim().toUpperCase();
-    const name = inputName.trim();
-    if (code.length < 6) { notify('❌ Код слишком короткий (минимум 6 символов)'); return; }
-    if (!name || name.length < 2) { notify('❌ Введи имя друга'); return; }
+    if (code.length < 6) { notify('❌ Введи код друга (минимум 6 символов)'); return; }
     if (code === myCode) { notify('❌ Нельзя добавить себя'); return; }
-    if (friends.some(f => f.code === code)) { notify('⚠️ Этот друг уже добавлен'); return; }
-    if (friends.length >= 10) { notify('❌ Максимум 10 друзей'); return; }
+    if (friends.some(f => f.code.toUpperCase() === code)) { notify('⚠️ Этот игрок уже в друзьях'); return; }
+    if (friends.length >= 20) { notify('❌ Максимум 20 друзей'); return; }
 
-    const newFriend: Friend = { code, name, emoji: '👤', addedAt: Date.now() };
-    const updated = [...friends, newFriend];
-    setFriends(updated);
-    saveFriends(updated);
-    setInputCode('');
-    setInputName('');
-    notify(`✅ ${name} добавлен в друзья! Бонус +10% монет при совместной игре`);
+    setLoading(true);
+    try {
+      const data = await friendsApiResolved('add', { code });
+      if (data.error) {
+        notify(`❌ ${data.error}`);
+      } else {
+        const f = data.friend;
+        setFriends(prev => [...prev, { code: f.code, name: f.name, emoji: f.emoji }]);
+        setInputCode('');
+        notify(`✅ ${f.name} добавлен в друзья! Играйте вместе — бонус +10% монет`);
+      }
+    } catch {
+      notify('❌ Ошибка соединения');
+    }
+    setLoading(false);
   };
 
-  const handleRemove = (code: string) => {
-    const updated = friends.filter(f => f.code !== code);
-    setFriends(updated);
-    saveFriends(updated);
+  const handleRemove = async (code: string) => {
+    const prev = friends;
+    setFriends(f => f.filter(x => x.code !== code));
+    try {
+      await friendsApiResolved('remove', { code });
+    } catch {
+      setFriends(prev);
+    }
   };
 
   const copyCode = () => {
@@ -91,6 +138,7 @@ export default function FriendsPanel({ playerName, playerEmoji, notify }: Friend
 
   return (
     <div className="flex flex-col gap-4">
+      {/* Мой код */}
       <div className="card-game-solid p-4 flex flex-col gap-3">
         <div className="font-russo text-white/50 text-xs uppercase tracking-wider">👥 Мой код</div>
         <div className="flex items-center gap-2 bg-white/5 rounded-xl px-3 py-2.5">
@@ -111,44 +159,54 @@ export default function FriendsPanel({ playerName, playerEmoji, notify }: Friend
         </p>
       </div>
 
+      {/* Добавить друга */}
       <div className="card-game p-4 flex flex-col gap-3">
         <div className="font-russo text-white/50 text-xs uppercase tracking-wider">➕ Добавить друга</div>
-        <input
-          className="bg-white/5 border border-white/10 rounded-xl px-3 py-2 font-russo text-white text-sm outline-none focus:border-yellow-500/50 placeholder:text-white/20 uppercase tracking-wider"
-          placeholder="КОД ДРУГА"
-          value={inputCode}
-          maxLength={16}
-          onChange={e => setInputCode(e.target.value.toUpperCase())}
-        />
-        <input
-          className="bg-white/5 border border-white/10 rounded-xl px-3 py-2 font-nunito text-white text-sm outline-none focus:border-yellow-500/50 placeholder:text-white/20"
-          placeholder="Имя друга"
-          value={inputName}
-          maxLength={20}
-          onChange={e => setInputName(e.target.value)}
-        />
-        <button
-          className="btn-yellow py-2 font-russo text-sm"
-          onClick={handleAdd}
-        >
-          Добавить
-        </button>
+        <div className="flex gap-2">
+          <input
+            className="flex-1 bg-white/5 border border-white/10 rounded-xl px-3 py-2 font-russo text-white text-sm outline-none focus:border-yellow-500/50 placeholder:text-white/20 uppercase tracking-wider"
+            placeholder="КОД ДРУГА"
+            value={inputCode}
+            maxLength={16}
+            onChange={e => setInputCode(e.target.value.toUpperCase())}
+            onKeyDown={e => e.key === 'Enter' && handleAdd()}
+          />
+          <button
+            className="btn-yellow px-4 py-2 font-russo text-sm shrink-0 disabled:opacity-50"
+            onClick={handleAdd}
+            disabled={loading}
+          >
+            {loading ? '...' : 'Добавить'}
+          </button>
+        </div>
+        <p className="text-white/20 text-xs font-nunito">
+          Друг сразу увидит тебя в своём списке — добавление взаимное
+        </p>
       </div>
 
-      {friends.length > 0 && (
+      {/* Список друзей */}
+      {listLoading ? (
+        <div className="text-center text-white/20 font-nunito text-sm py-4">Загрузка...</div>
+      ) : friends.length > 0 ? (
         <div className="card-game p-4 flex flex-col gap-2">
           <div className="font-russo text-white/50 text-xs uppercase tracking-wider mb-1">
-            Мои друзья ({friends.length}/10)
+            Мои друзья ({friends.length}/20)
           </div>
           {friends.map(f => (
             <div key={f.code} className="flex items-center gap-3 bg-white/5 rounded-xl px-3 py-2">
               <span className="text-lg">{f.emoji}</span>
-              <div className="flex-1">
-                <div className="font-russo text-white text-sm">{f.name}</div>
+              <div className="flex-1 min-w-0">
+                <div className="font-russo text-white text-sm truncate">{f.name}</div>
                 <div className="font-nunito text-white/30 text-xs tracking-wider">{f.code}</div>
               </div>
+              {f.wins !== undefined && (
+                <div className="text-right shrink-0">
+                  <div className="font-russo text-yellow-400 text-xs">{f.wins} побед</div>
+                  <div className="font-nunito text-white/20 text-xs">{(f.xp ?? 0).toLocaleString()} XP</div>
+                </div>
+              )}
               <button
-                className="text-white/20 hover:text-red-400 transition-colors text-xs font-russo"
+                className="text-white/20 hover:text-red-400 transition-colors text-xs font-russo ml-1 shrink-0"
                 onClick={() => handleRemove(f.code)}
               >
                 ✕
@@ -156,9 +214,7 @@ export default function FriendsPanel({ playerName, playerEmoji, notify }: Friend
             </div>
           ))}
         </div>
-      )}
-
-      {friends.length === 0 && (
+      ) : (
         <div className="text-center text-white/20 font-nunito text-sm py-4">
           Пока нет друзей — поделись своим кодом!
         </div>

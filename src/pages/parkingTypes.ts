@@ -18,6 +18,7 @@ export function getOrCreateAnonId(): string {
 export const AUTH_URL = 'https://functions.poehali.dev/3b4361d7-46d0-476d-be12-f345c31447fc';
 export const LEADERBOARD_URL = 'https://functions.poehali.dev/507d718a-32e2-4623-a6d8-1cf02d2af300';
 export const ROOM_URL = 'https://functions.poehali.dev/85e13db6-7b27-41b4-95fe-bf60d5d7bed7';
+export const FRIENDS_URL = 'https://functions.poehali.dev/1100a175-cd9d-4695-b2d0-5e32fa4c0f65';
 
 // Тип одного игрока в комнате (с бэкенда)
 export interface RoomPlayer {

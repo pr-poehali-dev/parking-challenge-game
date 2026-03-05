@@ -1,6 +1,6 @@
 """
 Авторизация игры 'Король парковки': регистрация, логин, сохранение, счётчик.
-POST / с полем action: register | login | save | save_ya | save_anon | count
+POST / с полем action: register | login | save | save_ya | save_anon | load_ya | load_anon | count
 """
 import json
 import os
@@ -218,6 +218,34 @@ def handler(event: dict, context) -> dict:
             )
             conn.commit()
             return ok({'success': True})
+
+        elif action == 'load_ya':
+            ya_id = (body.get('yaId') or '').strip()
+            if not ya_id:
+                return err('Нет yaId')
+            cur.execute(
+                f'''SELECT id, name, emoji, password_hash, coins, gems, xp, wins, games_played, best_position, selected_car, owned_cars, upgrades
+                    FROM {SCHEMA}.players WHERE ya_id = %s LIMIT 1''',
+                (ya_id,)
+            )
+            row = cur.fetchone()
+            if not row:
+                return ok({'profile': None})
+            return ok({'profile': row_to_profile(row)})
+
+        elif action == 'load_anon':
+            anon_id = (body.get('playerId') or '').strip()
+            if not anon_id:
+                return err('Нет playerId')
+            cur.execute(
+                f'''SELECT id, name, emoji, password_hash, coins, gems, xp, wins, games_played, best_position, selected_car, owned_cars, upgrades
+                    FROM {SCHEMA}.players WHERE anon_id = %s LIMIT 1''',
+                (anon_id,)
+            )
+            row = cur.fetchone()
+            if not row:
+                return ok({'profile': None})
+            return ok({'profile': row_to_profile(row)})
 
         elif action == 'count':
             cur.execute(f'SELECT COUNT(*) FROM {SCHEMA}.players')

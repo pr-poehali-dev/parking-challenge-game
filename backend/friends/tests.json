@@ -1,0 +1,21 @@
+{
+  "tests": [
+    {
+      "name": "Lookup nonexistent code",
+      "method": "POST",
+      "path": "/",
+      "body": {"action": "lookup", "code": "XXXXXX"},
+      "expectedStatus": 400,
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "List friends anon",
+      "method": "POST",
+      "path": "/",
+      "body": {"action": "list", "playerId": "anon_test_abc123"},
+      "expectedStatus": 200,
+      "expectedBody": {"friends": []},
+      "bodyMatcher": "partial"
+    }
+  ]
+}
