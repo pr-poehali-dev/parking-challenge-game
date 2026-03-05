@@ -146,7 +146,7 @@ export function GameScreen({
         <div className="coin-badge">🪙 {player.coins.toLocaleString()}</div>
       </div>
 
-      <div className="w-full max-w-3xl relative">
+      <div className="w-full max-w-3xl">
         <GameCanvas
           key={gameKey}
           playerName={player.name}
@@ -164,33 +164,34 @@ export function GameScreen({
           roomState={roomState}
           onPlayerMove={onPlayerMove}
         />
-        {inGamePhase === 'roundEnd' && !gameResult && (() => {
-          const car = player.cars[player.selectedCar];
-          if (!car || car.hp >= car.maxHp) return null;
-          const repairCost = Math.round(car.repairCost * (1 - car.hp / car.maxHp));
-          const healAmt = Math.round(car.maxHp * 0.4);
-          return (
-            <div className="absolute bottom-16 left-1/2 -translate-x-1/2 z-10 animate-bounce-in">
-              <button
-                className="btn-green px-6 py-3 text-base font-russo shadow-2xl"
-                onClick={() => {
-                  if (player.coins >= repairCost) {
-                    setPlayer(prev => {
-                      const newCars = prev.cars.map((c, i) => i === prev.selectedCar ? { ...c, hp: Math.min(c.maxHp, c.hp + healAmt) } : c);
-                      return { ...prev, coins: prev.coins - repairCost, cars: newCars };
-                    });
-                    notify(`🔧 Машина подлатана! +${healAmt} HP`);
-                  } else {
-                    notify('❌ Недостаточно монет!');
-                  }
-                }}
-              >
-                🔧 Починить {Math.round((1 - car.hp / car.maxHp) * 100)}% — {repairCost} 🪙
-              </button>
-            </div>
-          );
-        })()}
       </div>
+
+      {inGamePhase === 'roundEnd' && !gameResult && (() => {
+        const car = player.cars[player.selectedCar];
+        if (!car || car.hp >= car.maxHp) return null;
+        const repairCost = Math.round(car.repairCost * (1 - car.hp / car.maxHp));
+        const healAmt = Math.round(car.maxHp * 0.4);
+        return (
+          <div className="flex justify-center animate-bounce-in">
+            <button
+              className="btn-green px-6 py-3 text-base font-russo shadow-2xl"
+              onClick={() => {
+                if (player.coins >= repairCost) {
+                  setPlayer(prev => {
+                    const newCars = prev.cars.map((c, i) => i === prev.selectedCar ? { ...c, hp: Math.min(c.maxHp, c.hp + healAmt) } : c);
+                    return { ...prev, coins: prev.coins - repairCost, cars: newCars };
+                  });
+                  notify(`🔧 Машина подлатана! +${healAmt} HP`);
+                } else {
+                  notify('❌ Недостаточно монет!');
+                }
+              }}
+            >
+              🔧 Починить {Math.round((1 - car.hp / car.maxHp) * 100)}% — {repairCost} 🪙
+            </button>
+          </div>
+        );
+      })()}
 
       <div className="grid grid-cols-3 gap-2 md:hidden">
         <div />

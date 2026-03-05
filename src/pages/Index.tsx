@@ -47,15 +47,17 @@ export default function Index() {
   // Detect returning player on mount + auto-login if session active (runs after checkDailyBonus is defined)
   const autoLoginDone = useRef(false);
 
-  // Autosave locally + sync to server on every player change (except on login screen)
+  // Autosave locally + sync to server on every player change
   useEffect(() => {
     if (player.name) {
       saveProfile(player);
       if (player.password) {
         apiAuth('save', { name: player.name, password: player.password, profile: profileToSavePayload(player) }).catch(() => {});
+      } else if (localPlayerId.startsWith('ya_')) {
+        apiAuth('save_ya', { yaId: localPlayerId, profile: profileToSavePayload(player) }).catch(() => {});
       }
     }
-  }, [player, screen]);
+  }, [player, screen, localPlayerId]);
 
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
@@ -270,7 +272,7 @@ export default function Index() {
 
     const car = player.cars[player.selectedCar];
     try {
-      const data = await roomApi('join', {
+      const joinPromise = roomApi('join', {
         playerId: pid,
         name: displayName,
         emoji: player.emoji,
@@ -278,6 +280,11 @@ export default function Index() {
         bodyColor: car?.bodyColor ?? '#CC0033',
         maxHp: car?.maxHp ?? 100,
       });
+      // Таймаут 4 сек — если CSP или сеть блокирует, уходим в офлайн-режим
+      const data = await Promise.race([
+        joinPromise,
+        new Promise<never>((_, reject) => setTimeout(() => reject(new Error('timeout')), 4000)),
+      ]);
 
       if (data.error) throw new Error(data.error);
 
@@ -333,13 +340,14 @@ export default function Index() {
         startGamePollingRef.current(data.roomId, pid);
       }
     } catch {
-      // Fallback — одиночная игра без комнаты
+      // Fallback — офлайн-игра с ботами (CSP или сеть недоступны)
+      notify('🤖 Онлайн недоступен — играем с ботами!');
       setRoomState(null);
       setIsLobby(false);
       setGameKey(k => k + 1);
       setScreen('game');
     }
-  }, [player, localPlayerId, stopPolling]);
+  }, [player, localPlayerId, stopPolling, notify]);
 
   // Отправка позиции игрока на сервер
   const handlePlayerMove = useCallback((mv: {
