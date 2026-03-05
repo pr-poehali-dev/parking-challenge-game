@@ -27,7 +27,7 @@ export function blockParkingZone(car: Car) {
 }
 
 // Resolve collisions between all non-eliminated cars
-export function resolveAllCollisions(cars: Car[], state: GameState) {
+export function resolveAllCollisions(cars: Car[], state: GameState, noDamage = false) {
   const active = cars.filter(c => !c.eliminated && !c.parked);
   for (let i = 0; i < active.length; i++) {
     for (let j = i + 1; j < active.length; j++) {
@@ -41,22 +41,22 @@ export function resolveAllCollisions(cars: Car[], state: GameState) {
         const overlap = minDist - dist;
         const nx = dx / dist;
         const ny = dy / dist;
-        // Push apart
         a.x -= nx * overlap * 0.5;
         a.y -= ny * overlap * 0.5;
         b.x += nx * overlap * 0.5;
         b.y += ny * overlap * 0.5;
-        // Damage based on relative speed (bumper upgrade reduces player damage)
-        const relSpeed = Math.abs(a.speed - b.speed);
-        if (relSpeed > 0.5) {
-          const dmg = relSpeed * 0.6;
-          const aDmg = a.isPlayer && state.playerBumper ? dmg * 0.5 : dmg;
-          const bDmg = b.isPlayer && state.playerBumper ? dmg * 0.5 : dmg;
-          a.hp = Math.max(0, a.hp - aDmg);
-          b.hp = Math.max(0, b.hp - bDmg);
-          if (relSpeed > 1.5) {
-            spawnParticles(state, (a.x + b.x) / 2, (a.y + b.y) / 2, '#FF6B35', 6);
-            state.shakeTimer = Math.max(state.shakeTimer, 0.15);
+        if (!noDamage) {
+          const relSpeed = Math.abs(a.speed - b.speed);
+          if (relSpeed > 0.5) {
+            const dmg = relSpeed * 0.6;
+            const aDmg = a.isPlayer && state.playerBumper ? dmg * 0.5 : dmg;
+            const bDmg = b.isPlayer && state.playerBumper ? dmg * 0.5 : dmg;
+            a.hp = Math.max(0, a.hp - aDmg);
+            b.hp = Math.max(0, b.hp - bDmg);
+            if (relSpeed > 1.5) {
+              spawnParticles(state, (a.x + b.x) / 2, (a.y + b.y) / 2, '#FF6B35', 6);
+              state.shakeTimer = Math.max(state.shakeTimer, 0.15);
+            }
           }
         }
       }

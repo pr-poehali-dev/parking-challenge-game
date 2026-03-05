@@ -21,7 +21,12 @@ function saveFriends(friends: Friend[]) {
 }
 
 export function getMyFriendCode(): string {
-  return getOrCreateAnonId().slice(0, 10).toUpperCase();
+  const id = getOrCreateAnonId();
+  // Берём уникальную часть после "anon_TIMESTAMP_" и дополняем до 6 символов
+  const parts = id.split('_');
+  const unique = parts.slice(2).join('') || parts[1] || id;
+  // Возвращаем ровно 6 символов в верхнем регистре
+  return unique.slice(0, 6).toUpperCase().padEnd(6, '0');
 }
 
 export function hasFriendInRoom(roomPlayerIds: string[], myFriends: Friend[]): boolean {
@@ -49,7 +54,7 @@ export default function FriendsPanel({ playerName, playerEmoji, notify }: Friend
   const handleAdd = () => {
     const code = inputCode.trim().toUpperCase();
     const name = inputName.trim();
-    if (code.length < 8) { notify('❌ Код слишком короткий (минимум 8 символов)'); return; }
+    if (code.length < 6) { notify('❌ Код слишком короткий (минимум 6 символов)'); return; }
     if (!name || name.length < 2) { notify('❌ Введи имя друга'); return; }
     if (code === myCode) { notify('❌ Нельзя добавить себя'); return; }
     if (friends.some(f => f.code === code)) { notify('⚠️ Этот друг уже добавлен'); return; }

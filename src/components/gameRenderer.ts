@@ -568,7 +568,7 @@ export function drawHUD(ctx: CanvasRenderingContext2D, state: GameState, time: n
     ctx.textAlign = 'center';
     ctx.shadowColor = '#FFD600';
     ctx.shadowBlur = 10;
-    ctx.fillText('⏳ Жди сигнала — машина едет сама', CENTER_X, CANVAS_H - 12);
+    ctx.fillText('⏳ Жди сигнала — машина едет сама, урон не наносится', CENTER_X, CANVAS_H - 12);
     ctx.shadowBlur = 0;
     ctx.restore();
   }

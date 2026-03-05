@@ -77,7 +77,7 @@ export function useGameLoop({
       if (state.phase === 'driving') {
         state.timer -= dt;
 
-        // В фазе driving игрок едет по орбите автоматически (как боты)
+        // В фазе driving игрок едет по орбите автоматически (как боты), урон не начисляется
         state.cars.forEach(car => botAI(car, state, dt));
 
         state.cars.forEach(car => {
@@ -86,7 +86,7 @@ export function useGameLoop({
           }
         });
 
-        resolveAllCollisions(state.cars, state);
+        resolveAllCollisions(state.cars, state, true);
 
         if (onPlayerMoveRef.current && time - moveThrottleRef.current > 0.2) {
           moveThrottleRef.current = time;
