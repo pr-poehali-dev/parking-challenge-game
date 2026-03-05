@@ -74,8 +74,10 @@ export function useBotAI() {
 
     car.x = CENTER_X + Math.cos(car.orbitAngle) * car.orbitRadius;
     car.y = CENTER_Y + Math.sin(car.orbitAngle) * car.orbitRadius;
-    // Направление машины — по касательной к окружности (против часовой = orbitAngle + PI/2)
-    car.angle = car.orbitAngle + Math.PI / 2;
+    // Нос вперёд по ходу движения (по часовой в canvas, y вниз):
+    // скорость = (sin θ, cos θ), движение sin(angle)*speed и -cos(angle)*speed
+    // → angle = θ + π даёт нос по часовой
+    car.angle = car.orbitAngle + Math.PI;
 
     if (Math.random() < 0.02) {
       state.driftMarks.push({

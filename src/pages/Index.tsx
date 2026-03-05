@@ -453,7 +453,7 @@ export default function Index() {
       )}
 
       {screen === 'menu' && (
-        <MenuScreen player={player} setScreen={setScreen} onPlay={handlePlay} onQuestClaim={(questId) => {
+        <MenuScreen player={player} setScreen={setScreen} onPlay={handlePlay} notify={notify} onQuestClaim={(questId) => {
           setPlayer(prev => {
             const today = todayDateStr();
             const quest = (prev.dailyQuests ?? []).find(q => q.id === questId);

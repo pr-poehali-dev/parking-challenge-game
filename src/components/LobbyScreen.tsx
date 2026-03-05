@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import type { RoomState } from '@/pages/parkingTypes';
+import { getMyFriendCode } from '@/components/FriendsPanel';
 
 interface LobbyScreenProps {
   room: RoomState;
@@ -19,8 +20,7 @@ export default function LobbyScreen({ room, localPlayerId, onCancel }: LobbyScre
   const totalSlots = 10;
   const botSlots = totalSlots - realPlayers.length;
 
-  const inviteCode = room.roomId.slice(0, 8).toUpperCase();
-  const inviteLink = `${window.location.origin}${window.location.pathname}?room=${inviteCode}`;
+  const myFriendCode = getMyFriendCode();
 
   useEffect(() => {
     intervalRef.current = setInterval(() => {
@@ -31,20 +31,17 @@ export default function LobbyScreen({ room, localPlayerId, onCancel }: LobbyScre
   }, [room.timerEnd]);
 
   const handleCopyLink = () => {
-    navigator.clipboard.writeText(inviteLink).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    }).catch(() => {
-      // fallback
+    const text = `Привет! Добавь мой код в игре "Король парковки" → Профиль → Друзья: ${myFriendCode} — и получим бонус +10% монет при совместной игре!`;
+    navigator.clipboard.writeText(text).catch(() => {
       const el = document.createElement('textarea');
-      el.value = inviteLink;
+      el.value = text;
       document.body.appendChild(el);
       el.select();
       document.execCommand('copy');
       document.body.removeChild(el);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
     });
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   };
 
   const progress = Math.max(0, Math.min(1, 1 - secs / LOBBY_WAIT_SEC));
@@ -123,19 +120,22 @@ export default function LobbyScreen({ room, localPlayerId, onCancel }: LobbyScre
 
         {/* Пригласить друга */}
         <div className="card-game p-4 flex flex-col gap-2">
-          <div className="font-russo text-white/50 text-xs uppercase tracking-wider">🔗 Пригласить друга</div>
+          <div className="font-russo text-white/50 text-xs uppercase tracking-wider">👥 Пригласить друга</div>
           <div className="flex items-center gap-2 bg-white/5 rounded-xl px-3 py-2">
-            <code className="font-nunito text-yellow-400 text-sm flex-1 truncate">{inviteCode}</code>
+            <div className="flex-1 min-w-0">
+              <div className="font-russo text-yellow-400 text-sm tracking-widest truncate">{myFriendCode}</div>
+              <div className="font-nunito text-white/30 text-xs">твой код игрока</div>
+            </div>
             <button
-              className={`text-xs font-russo px-3 py-1.5 rounded-lg transition-all ${
+              className={`shrink-0 text-xs font-russo px-3 py-1.5 rounded-lg transition-all ${
                 copied ? 'bg-green-500 text-white' : 'bg-white/10 text-white hover:bg-white/20'
               }`}
               onClick={handleCopyLink}
             >
-              {copied ? '✓ Скопировано' : 'Копировать'}
+              {copied ? '✓ Скопировано' : 'Скопировать'}
             </button>
           </div>
-          <p className="text-white/20 text-xs font-nunito">Отправь другу код — он введёт его при старте игры</p>
+          <p className="text-white/20 text-xs font-nunito">Отправь другу — он вводит твой код в Профиль → Друзья</p>
         </div>
 
         <button className="btn-red py-3 font-russo" onClick={onCancel}>
