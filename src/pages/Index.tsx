@@ -37,22 +37,8 @@ export default function Index() {
     }
   }, [screen]);
 
-  // Detect returning player on mount + auto-login if session active
-  useEffect(() => {
-    const saved = loadProfile();
-    if (saved && saved.name) {
-      setIsReturningPlayer(true);
-      const session = getSession();
-      if (session && session.name === saved.name) {
-        const withBonus = checkDailyBonus(saved);
-        setPlayer(withBonus);
-        saveProfile(withBonus);
-        setScreen('menu');
-      } else {
-        setPlayer(saved);
-      }
-    }
-  }, [checkDailyBonus]);
+  // Detect returning player on mount + auto-login if session active (runs after checkDailyBonus is defined)
+  const autoLoginDone = useRef(false);
 
   // Autosave locally + sync to server on every player change (except on login screen)
   useEffect(() => {
@@ -105,6 +91,25 @@ export default function Index() {
     setDailyBonus({ streak: newStreak, coins: reward.coins, gems: reward.gems });
     return updated;
   }, []);
+
+  // Detect returning player on mount + auto-login if session active
+  useEffect(() => {
+    if (autoLoginDone.current) return;
+    autoLoginDone.current = true;
+    const saved = loadProfile();
+    if (saved && saved.name) {
+      setIsReturningPlayer(true);
+      const session = getSession();
+      if (session && session.name === saved.name) {
+        const withBonus = checkDailyBonus(saved);
+        setPlayer(withBonus);
+        saveProfile(withBonus);
+        setScreen('menu');
+      } else {
+        setPlayer(saved);
+      }
+    }
+  }, [checkDailyBonus]);
 
   const handleRoundEnd = useCallback((round: number, isPlayerEliminated: boolean, playerHp: number, playerMaxHp: number) => {
     setGameRound(round);
