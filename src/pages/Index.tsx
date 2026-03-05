@@ -1,14 +1,12 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Screen, PlayerData, LeaderEntry, RoomState,
-  DEFAULT_PLAYER, INITIAL_CARS,
+  DEFAULT_PLAYER,
   loadProfile, saveProfile, profileToSavePayload,
-  getSession, setSession,
   apiAuth, fetchLeaderboard, roomApi, getYaPlayer,
-  levelFromXp, initYandexGames,
+  initYandexGames,
   DAILY_STREAK_REWARDS, makeDailyQuests, todayDateStr,
 } from './parkingTypes';
-import LoginScreen from './LoginScreen';
 import { MenuScreen, GameScreen, GameOverScreen } from './GameScreens';
 import { GarageScreen, ShopScreen, ProfileScreen, LeaderboardScreen } from './PlayerScreens';
 import DailyBonusModal from '@/components/DailyBonusModal';
@@ -16,9 +14,10 @@ import LobbyScreen from '@/components/LobbyScreen';
 import NicknameSetup, { getSavedNick } from '@/components/NicknameSetup';
 
 export default function Index() {
-  const [screen, setScreen] = useState<Screen>('login');
+  const [screen, setScreen] = useState<Screen>('menu');
+  const [isLoading, setIsLoading] = useState(true);
   const [player, setPlayer] = useState<PlayerData>(() => loadProfile() ?? DEFAULT_PLAYER);
-  const [isReturningPlayer, setIsReturningPlayer] = useState(false);
+
   const [gameRound, setGameRound] = useState(1);
   const [gameKey, setGameKey] = useState(0);
   const [gameResult, setGameResult] = useState<{ position: number; coinsEarned: number } | null>(null);
@@ -36,8 +35,7 @@ export default function Index() {
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [needNickname, setNeedNickname] = useState(false);
 
-  // Init YaGames SDK on mount
-  useEffect(() => { initYandexGames(); }, []);
+  // YaGames SDK инициализируется в doAutoLogin
 
   // Load online leaderboard when entering leaderboard screen
   useEffect(() => {
@@ -51,7 +49,7 @@ export default function Index() {
 
   // Autosave locally + sync to server on every player change (except on login screen)
   useEffect(() => {
-    if (player.name && screen !== 'login') {
+    if (player.name) {
       saveProfile(player);
       if (player.password) {
         apiAuth('save', { name: player.name, password: player.password, profile: profileToSavePayload(player) }).catch(() => {});
@@ -101,23 +99,56 @@ export default function Index() {
     return updated;
   }, []);
 
-  // Detect returning player on mount + auto-login if session active
+  // Автовход через Яндекс ID или локальный профиль
   useEffect(() => {
     if (autoLoginDone.current) return;
     autoLoginDone.current = true;
-    const saved = loadProfile();
-    if (saved && saved.name) {
-      setIsReturningPlayer(true);
-      const session = getSession();
-      if (session && session.name === saved.name) {
-        const withBonus = checkDailyBonus(saved);
+
+    const doAutoLogin = async () => {
+      try {
+        await initYandexGames();
+        const ya = await getYaPlayer();
+
+        const saved = loadProfile();
+        let base: PlayerData;
+
+        if (ya) {
+          // Яндекс авторизован — берём сохранённый профиль или создаём новый
+          if (saved && saved.name) {
+            base = saved;
+          } else {
+            const yaName = ya.name && ya.name.length >= 2 && ya.name.length <= 16
+              ? ya.name
+              : 'Игрок';
+            base = { ...DEFAULT_PLAYER, name: yaName };
+          }
+          setLocalPlayerId(ya.id);
+        } else if (saved && saved.name) {
+          // Нет Яндекс SDK — используем локальный профиль
+          base = saved;
+        } else {
+          // Совсем новый пользователь без Яндекса
+          base = { ...DEFAULT_PLAYER, name: 'Игрок' };
+          setNeedNickname(true);
+        }
+
+        const withBonus = checkDailyBonus(base);
         setPlayer(withBonus);
         saveProfile(withBonus);
-        setScreen('menu');
-      } else {
-        setPlayer(saved);
+
+      } catch {
+        const saved = loadProfile();
+        if (saved && saved.name) {
+          const withBonus = checkDailyBonus(saved);
+          setPlayer(withBonus);
+          saveProfile(withBonus);
+        }
+      } finally {
+        setIsLoading(false);
       }
-    }
+    };
+
+    doAutoLogin();
   }, [checkDailyBonus]);
 
   const handleRoundEnd = useCallback((round: number, isPlayerEliminated: boolean, playerHp: number, playerMaxHp: number) => {
@@ -314,6 +345,19 @@ export default function Index() {
   // Очистка при размонтировании
   useEffect(() => () => stopPolling(), [stopPolling]);
 
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-950">
+        <div className="text-center">
+          <div className="text-6xl mb-4">👑</div>
+          <div className="text-white font-russo text-xl mb-2">Король парковки</div>
+          <div className="text-gray-400 text-sm">Загрузка...</div>
+          <div className="mt-4 w-8 h-8 border-2 border-yellow-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="relative min-h-screen">
       {needNickname && (
@@ -342,56 +386,6 @@ export default function Index() {
             {notification}
           </div>
         </div>
-      )}
-
-      {screen === 'login' && (
-        <LoginScreen
-          onLogin={async (name, password) => {
-            const data = await apiAuth('login', { name, password });
-            if (data.error) return data.error;
-            const sp = data.profile;
-            const today = todayDateStr();
-            const base: PlayerData = {
-              ...DEFAULT_PLAYER,
-              name: sp.name ?? name,
-              emoji: sp.emoji ?? '😎',
-              password,
-              coins: sp.coins ?? 1000,
-              gems: sp.gems ?? 50,
-              xp: sp.xp ?? 0,
-              wins: sp.wins ?? 0,
-              gamesPlayed: sp.gamesPlayed ?? 0,
-              bestPosition: sp.bestPosition ?? 99,
-              selectedCar: sp.selectedCar ?? 0,
-              level: levelFromXp(sp.xp ?? 0),
-              cars: INITIAL_CARS.map(c => ({ ...c, owned: (sp.ownedCars ?? [0]).includes(c.id) })),
-              upgrades: { ...DEFAULT_PLAYER.upgrades, ...(sp.upgrades ?? {}) },
-              loginStreak: sp.loginStreak ?? 0,
-              lastLoginDate: sp.lastLoginDate ?? '',
-              dailyQuests: sp.dailyQuestsDate === today ? (sp.dailyQuests ?? makeDailyQuests()) : makeDailyQuests(),
-              dailyQuestsDate: sp.dailyQuestsDate === today ? today : '',
-            };
-            const withBonus = checkDailyBonus(base);
-            setPlayer(withBonus);
-            saveProfile(withBonus);
-            setIsReturningPlayer(true);
-            setSession(name, password);
-            setScreen('menu');
-            return null;
-          }}
-          onRegister={async (name, emoji, password) => {
-            const data = await apiAuth('register', { name, emoji, password });
-            if (data.error) return data.error;
-            const base: PlayerData = { ...DEFAULT_PLAYER, name, emoji, password };
-            const withBonus = checkDailyBonus(base);
-            setPlayer(withBonus);
-            saveProfile(withBonus);
-            setIsReturningPlayer(true);
-            setSession(name, password);
-            setScreen('menu');
-            return null;
-          }}
-        />
       )}
 
       {screen === 'menu' && (
