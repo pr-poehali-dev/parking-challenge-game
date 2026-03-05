@@ -3,6 +3,7 @@ import {
   CENTER_X, CENTER_Y,
   PARK_LEFT, PARK_RIGHT, PARK_TOP, PARK_BOTTOM,
   EXCL_LEFT, EXCL_RIGHT, EXCL_TOP, EXCL_BOTTOM, EXCL_RADIUS,
+  EXCL_RX, EXCL_RY,
   CAR_COLORS, CAR_EMOJIS, CAR_NAMES,
 } from './gameTypes';
 
@@ -10,17 +11,17 @@ export function isInsideParkingZone(x: number, y: number): boolean {
   return x > PARK_LEFT && x < PARK_RIGHT && y > PARK_TOP && y < PARK_BOTTOM;
 }
 
-// Push car firmly outside the exclusion zone before signal
+// Push car firmly outside the ellipse exclusion zone before signal
 export function blockParkingZone(car: Car) {
   const dx = car.x - CENTER_X;
   const dy = car.y - CENTER_Y;
-  const dist = Math.hypot(dx, dy);
-  if (dist < EXCL_RADIUS && dist > 0) {
-    // Push car to the circle boundary
-    const nx = dx / dist;
-    const ny = dy / dist;
-    car.x = CENTER_X + nx * (EXCL_RADIUS + 2);
-    car.y = CENTER_Y + ny * (EXCL_RADIUS + 2);
+  // Ellipse check: (dx/RX)^2 + (dy/RY)^2 < 1
+  const ellipseVal = (dx / EXCL_RX) ** 2 + (dy / EXCL_RY) ** 2;
+  if (ellipseVal < 1 && (dx !== 0 || dy !== 0)) {
+    // Push to ellipse boundary along the same direction
+    const angle = Math.atan2(dy / EXCL_RY, dx / EXCL_RX);
+    car.x = CENTER_X + Math.cos(angle) * (EXCL_RX + 2);
+    car.y = CENTER_Y + Math.sin(angle) * (EXCL_RY + 2);
     car.speed = Math.abs(car.speed) * 0.4;
   }
 }

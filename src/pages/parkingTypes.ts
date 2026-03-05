@@ -110,6 +110,7 @@ export interface DailyQuest {
   goal: number;
   progress: number;
   done: boolean;
+  claimed: boolean;
   reward: { coins: number; gems?: number };
 }
 
@@ -150,11 +151,21 @@ export async function apiAuth(action: string, payload: Record<string, unknown>) 
   return res.json();
 }
 
+const LB_CACHE_KEY = 'parking_lb_cache';
+const LB_CACHE_TTL = 5 * 60 * 1000; // 5 минут
+
 export async function fetchLeaderboard(): Promise<LeaderEntry[]> {
   try {
+    const cached = localStorage.getItem(LB_CACHE_KEY);
+    if (cached) {
+      const { ts, data } = JSON.parse(cached);
+      if (Date.now() - ts < LB_CACHE_TTL) return data;
+    }
     const res = await fetch(LEADERBOARD_URL);
-    const data = await res.json();
-    return data.leaders || [];
+    const json = await res.json();
+    const leaders = json.leaders || [];
+    localStorage.setItem(LB_CACHE_KEY, JSON.stringify({ ts: Date.now(), data: leaders }));
+    return leaders;
   } catch { return []; }
 }
 
@@ -254,19 +265,19 @@ export function makeDailyQuests(dateStr?: string): DailyQuest[] {
     {
       id: 'play3',
       label: `Сыграй ${playGoal} ${playGoal === 3 ? 'игры' : 'игр'}`,
-      goal: playGoal, progress: 0, done: false,
+      goal: playGoal, progress: 0, done: false, claimed: false,
       reward: { coins: 100 + playGoal * 30 },
     },
     {
       id: 'top5',
       label: `Финишируй в топ-${topN}`,
-      goal: 1, progress: 0, done: false,
+      goal: 1, progress: 0, done: false, claimed: false,
       reward: { coins: topN === 3 ? 350 : 200, gems: topN === 3 ? 1 : 0 },
     },
     {
       id: 'survive',
       label: `Доживи до ${surviveRound}-го раунда`,
-      goal: surviveRound, progress: 0, done: false,
+      goal: surviveRound, progress: 0, done: false, claimed: false,
       reward: { coins: surviveRound >= 7 ? 400 : 250, gems: 1 },
     },
   ];

@@ -138,9 +138,7 @@ export default function Index() {
     setPlayer(prev => {
       const today = todayDateStr();
       const baseQuests = prev.dailyQuestsDate === today ? prev.dailyQuests : makeDailyQuests(today);
-      let bonusCoins = 0;
-      let bonusGems = 0;
-      const completedLabels: string[] = [];
+      const newCompletedLabels: string[] = [];
       const newQuests = baseQuests.map(q => {
         if (q.done) return q;
         let progress = q.progress;
@@ -149,21 +147,19 @@ export default function Index() {
         if (q.id === 'survive') progress = Math.max(progress, Math.min(q.goal, roundsPlayed ?? 0));
         const done = progress >= q.goal;
         if (done && !q.done) {
-          bonusCoins += q.reward.coins;
-          bonusGems += q.reward.gems ?? 0;
-          completedLabels.push(`✅ ${q.label} +${q.reward.coins}🪙${q.reward.gems ? ` +${q.reward.gems}💎` : ''}`);
+          newCompletedLabels.push(`🎯 ${q.label} — готово! Забери награду`);
         }
         return { ...q, progress, done };
       });
-      if (completedLabels.length > 0) {
-        completedLabels.forEach((msg, i) => {
-          setTimeout(() => notify(msg), i * 2500);
+      if (newCompletedLabels.length > 0) {
+        newCompletedLabels.forEach((msg, i) => {
+          setTimeout(() => notify(msg), i * 2000);
         });
       }
       return {
         ...prev,
-        coins: prev.coins + coinsEarned + bonusCoins,
-        gems: prev.gems + bonusGems,
+        coins: prev.coins + coinsEarned,
+        gems: prev.gems,
         xp: prev.xp + xpEarned,
         level: levelFromXp(prev.xp + xpEarned),
         wins: position === 1 ? prev.wins + 1 : prev.wins,
@@ -378,10 +374,15 @@ export default function Index() {
         <MenuScreen player={player} setScreen={setScreen} onPlay={handlePlay} onQuestClaim={(questId) => {
           setPlayer(prev => {
             const today = todayDateStr();
+            const quest = (prev.dailyQuests ?? []).find(q => q.id === questId);
+            if (!quest || quest.claimed || quest.progress < quest.goal) return prev;
+            notify(`✅ ${quest.label} +${quest.reward.coins}🪙${quest.reward.gems ? ` +${quest.reward.gems}💎` : ''}`);
             return {
               ...prev,
-              dailyQuests: (prev.dailyQuests ?? []).map(q =>
-                q.id === questId && q.done ? { ...q, done: true } : q
+              coins: prev.coins + quest.reward.coins,
+              gems: prev.gems + (quest.reward.gems ?? 0),
+              dailyQuests: prev.dailyQuests.map(q =>
+                q.id === questId ? { ...q, claimed: true } : q
               ),
               dailyQuestsDate: today,
             };

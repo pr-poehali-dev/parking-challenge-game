@@ -108,8 +108,10 @@ export const EXCL_LEFT   = PARK_LEFT   - EXCL_PAD;
 export const EXCL_RIGHT  = PARK_RIGHT  + EXCL_PAD;
 export const EXCL_TOP    = PARK_TOP    - EXCL_PAD;
 export const EXCL_BOTTOM = PARK_BOTTOM + EXCL_PAD;
-// Circular exclusion radius (replaces rectangular check)
-export const EXCL_RADIUS = 220;
+// Ellipse exclusion zone (wider horizontally to cover parking corners)
+export const EXCL_RX = 260; // horizontal radius
+export const EXCL_RY = 195; // vertical radius
+export const EXCL_RADIUS = 220; // kept for backward compat, not used for logic
 
 // Car appearance data
 export const CAR_COLORS = [

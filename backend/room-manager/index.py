@@ -61,16 +61,22 @@ def resp(data, code=200):
 
 
 def find_or_create_room(db) -> str:
-    """Ищет комнату в ожидании или создаёт новую."""
+    """Ищет свежую комнату в ожидании или создаёт новую.
+    Игнорирует зависшие комнаты (таймаут прошёл более 60 сек назад без реальных игроков)."""
     cur = db.cursor()
+    now_ms = int(time.time() * 1000)
+    stale_threshold = now_ms - 60_000  # старше 1 минуты после таймаута = мёртвая
+    # Ищем живую комнату: либо таймаут ещё не вышел, либо вышел недавно
     cur.execute(
-        f"SELECT id FROM {SCHEMA}.rooms WHERE status='waiting' ORDER BY created_at LIMIT 1"
+        f"SELECT r.id FROM {SCHEMA}.rooms r "
+        f"WHERE r.status='waiting' AND r.timer_end > %s "
+        f"ORDER BY r.created_at LIMIT 1",
+        (stale_threshold,)
     )
     row = cur.fetchone()
     if row:
         return row[0]
     room_id = str(uuid.uuid4())
-    now_ms = int(time.time() * 1000)
     spots = make_spots(MAX_PLAYERS)
     cur.execute(
         f"INSERT INTO {SCHEMA}.rooms (id, status, round, phase, timer_end, spots_json, created_at, started_at, max_players) "

@@ -9,7 +9,7 @@ interface MenuScreenProps {
   onQuestClaim?: (questId: string) => void;
 }
 
-export function MenuScreen({ player, setScreen, onPlay }: MenuScreenProps) {
+export function MenuScreen({ player, setScreen, onPlay, onQuestClaim }: MenuScreenProps) {
   const today = todayDateStr();
   const quests: DailyQuest[] = player.dailyQuestsDate === today ? (player.dailyQuests ?? []) : [];
   const hasActiveQuests = quests.some(q => !q.done || q.progress < q.goal);
@@ -61,20 +61,32 @@ export function MenuScreen({ player, setScreen, onPlay }: MenuScreenProps) {
             <div className="flex flex-col gap-1.5">
               {quests.map(q => {
                 const pct = Math.min(100, (q.progress / q.goal) * 100);
+                const canClaim = q.progress >= q.goal && !q.claimed;
                 return (
-                  <div key={q.id} className={`flex items-center gap-2 rounded-lg px-2 py-1.5 ${q.done ? 'bg-green-500/10 border border-green-500/20' : 'bg-white/5'}`}>
+                  <div key={q.id} className={`flex items-center gap-2 rounded-lg px-2 py-1.5 ${q.claimed ? 'bg-green-500/10 border border-green-500/20 opacity-60' : canClaim ? 'bg-yellow-400/10 border border-yellow-400/30' : 'bg-white/5'}`}>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1">
-                        <span className={`font-nunito text-xs ${q.done ? 'text-green-400' : 'text-white/70'}`}>{q.label}</span>
+                        <span className={`font-nunito text-xs ${q.claimed ? 'text-green-400' : canClaim ? 'text-yellow-300' : 'text-white/70'}`}>{q.label}</span>
                         <span className="ml-auto font-nunito text-white/40 text-xs whitespace-nowrap">{q.progress}/{q.goal}</span>
                       </div>
                       <div className="h-1 bg-white/10 rounded-full mt-1 overflow-hidden">
                         <div className="h-full bg-yellow-400 rounded-full transition-all" style={{ width: `${pct}%` }} />
                       </div>
                     </div>
-                    <div className="shrink-0 text-xs font-nunito text-yellow-400 whitespace-nowrap">
-                      +{q.reward.coins}🪙{q.reward.gems ? ` +${q.reward.gems}💎` : ''}
-                    </div>
+                    {q.claimed ? (
+                      <div className="shrink-0 text-green-400 text-xs">✅</div>
+                    ) : canClaim ? (
+                      <button
+                        className="shrink-0 bg-yellow-400 text-gray-900 font-russo text-xs px-2 py-1 rounded-lg hover:bg-yellow-300 transition-all whitespace-nowrap"
+                        onClick={() => onQuestClaim?.(q.id)}
+                      >
+                        Забрать!
+                      </button>
+                    ) : (
+                      <div className="shrink-0 text-xs font-nunito text-yellow-400/60 whitespace-nowrap">
+                        +{q.reward.coins}🪙{q.reward.gems ? ` +${q.reward.gems}💎` : ''}
+                      </div>
+                    )}
                   </div>
                 );
               })}

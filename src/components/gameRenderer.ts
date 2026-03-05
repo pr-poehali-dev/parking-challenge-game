@@ -4,6 +4,7 @@ import {
   SPOT_W, SPOT_H,
   PARK_LEFT, PARK_RIGHT, PARK_TOP, PARK_BOTTOM,
   EXCL_LEFT, EXCL_RIGHT, EXCL_TOP, EXCL_BOTTOM, EXCL_RADIUS,
+  EXCL_RX, EXCL_RY,
 } from './gameTypes';
 
 export function drawCar(ctx: CanvasRenderingContext2D, car: Car, time: number) {
@@ -171,19 +172,19 @@ export function drawParkingArea(ctx: CanvasRenderingContext2D, spots: ParkingSpo
   ctx.stroke();
   ctx.setLineDash([]);
 
-  // Exclusion zone outer boundary — circular dashed halo when closed
+  // Exclusion zone outer boundary — ellipse dashed halo when closed
   if (!signalActive) {
     ctx.strokeStyle = 'rgba(255,45,85,0.3)';
     ctx.lineWidth = 2;
     ctx.setLineDash([8, 10]);
     ctx.beginPath();
-    ctx.arc(CENTER_X, CENTER_Y, EXCL_RADIUS, 0, Math.PI * 2);
+    ctx.ellipse(CENTER_X, CENTER_Y, EXCL_RX, EXCL_RY, 0, 0, Math.PI * 2);
     ctx.stroke();
     ctx.setLineDash([]);
     ctx.fillStyle = 'rgba(255,45,85,0.55)';
     ctx.font = 'bold 11px Russo One, sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('🚫 ВЪЕЗД ЗАКРЫТ', CENTER_X, CENTER_Y - EXCL_RADIUS - 6);
+    ctx.fillText('🚫 ВЪЕЗД ЗАКРЫТ', CENTER_X, CENTER_Y - EXCL_RY - 6);
   }
 
   ctx.restore();
