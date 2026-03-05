@@ -63,10 +63,10 @@ export default function Index() {
     return () => { window.removeEventListener('keydown', down); window.removeEventListener('keyup', up); };
   }, []);
 
-  const notify = (msg: string) => {
+  const notify = useCallback((msg: string) => {
     setNotification(msg);
     setTimeout(() => setNotification(null), 3000);
-  };
+  }, []);
 
   const checkDailyBonus = useCallback((p: PlayerData): PlayerData => {
     const today = todayDateStr();
@@ -131,6 +131,7 @@ export default function Index() {
       const baseQuests = prev.dailyQuestsDate === today ? prev.dailyQuests : makeDailyQuests(today);
       let bonusCoins = 0;
       let bonusGems = 0;
+      const completedLabels: string[] = [];
       const newQuests = baseQuests.map(q => {
         if (q.done) return q;
         let progress = q.progress;
@@ -141,9 +142,15 @@ export default function Index() {
         if (done && !q.done) {
           bonusCoins += q.reward.coins;
           bonusGems += q.reward.gems ?? 0;
+          completedLabels.push(`✅ ${q.label} +${q.reward.coins}🪙${q.reward.gems ? ` +${q.reward.gems}💎` : ''}`);
         }
         return { ...q, progress, done };
       });
+      if (completedLabels.length > 0) {
+        completedLabels.forEach((msg, i) => {
+          setTimeout(() => notify(msg), i * 2500);
+        });
+      }
       return {
         ...prev,
         coins: prev.coins + coinsEarned + bonusCoins,
@@ -158,7 +165,7 @@ export default function Index() {
       };
     });
     setScreen('gameOver');
-  }, []);
+  }, [notify]);
 
   const handlePlay = () => {
     setGameKey(k => k + 1);
