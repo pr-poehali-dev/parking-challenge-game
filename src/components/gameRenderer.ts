@@ -559,11 +559,17 @@ export function drawHUD(ctx: CanvasRenderingContext2D, state: GameState, time: n
     ctx.fillText('← → ↑ ↓ движение  |  Space = нитро', CANVAS_W - 15, CANVAS_H - 10);
     ctx.restore();
   } else if (state.phase === 'driving') {
+    // Пульсирующая подсказка "Жди сигнала"
+    const pulse = 0.55 + Math.sin(time * 2.5) * 0.25;
     ctx.save();
-    ctx.fillStyle = 'rgba(255,255,255,0.25)';
-    ctx.font = '11px Nunito, sans-serif';
-    ctx.textAlign = 'right';
-    ctx.fillText('← → Повернуть   ↑ ↓ Газ/Тормоз', CANVAS_W - 15, CANVAS_H - 10);
+    ctx.globalAlpha = pulse;
+    ctx.fillStyle = '#FFD600';
+    ctx.font = 'bold 13px Russo One, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.shadowColor = '#FFD600';
+    ctx.shadowBlur = 10;
+    ctx.fillText('⏳ Жди сигнала — машина едет сама', CENTER_X, CANVAS_H - 12);
+    ctx.shadowBlur = 0;
     ctx.restore();
   }
 }
