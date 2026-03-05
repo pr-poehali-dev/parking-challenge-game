@@ -4,6 +4,8 @@ import { FRIENDS_URL, getOrCreateAnonId } from '@/pages/parkingTypes';
 const FRIEND_BONUS_COINS = 0.1;
 const FRIEND_BONUS_XP = 0.15;
 
+const FRIENDS_CACHE_KEY = 'parking_friends_cache_v2';
+
 export interface Friend {
   id?: number;
   code: string;
@@ -12,6 +14,19 @@ export interface Friend {
   xp?: number;
   wins?: number;
   gamesTogether?: number;
+}
+
+export function getFriends(): Friend[] {
+  try { return JSON.parse(localStorage.getItem(FRIENDS_CACHE_KEY) ?? '[]'); } catch { return []; }
+}
+
+export function getMyFriendCode(): string {
+  const cached = localStorage.getItem('parking_my_friend_code');
+  if (cached) return cached;
+  const id = getOrCreateAnonId();
+  const parts = id.split('_');
+  const unique = parts.slice(2).join('') || parts[1] || id;
+  return unique.slice(0, 6).toUpperCase().padEnd(6, '0');
 }
 
 export function hasFriendInRoom(roomPlayerIds: string[], myFriends: Friend[]): boolean {
@@ -80,8 +95,14 @@ export default function FriendsPanel({ playerName, playerEmoji, notify }: Friend
     setListLoading(true);
     try {
       const data = await friendsApiResolved('list', {});
-      if (data.friends) setFriends(data.friends);
-      if (data.myCode) setMyCode(data.myCode);
+      if (data.friends) {
+        setFriends(data.friends);
+        localStorage.setItem(FRIENDS_CACHE_KEY, JSON.stringify(data.friends));
+      }
+      if (data.myCode) {
+        setMyCode(data.myCode);
+        localStorage.setItem('parking_my_friend_code', data.myCode);
+      }
     } catch { /* ignore */ }
     setListLoading(false);
   }, []);
