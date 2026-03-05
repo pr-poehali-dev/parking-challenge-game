@@ -1,7 +1,5 @@
-import { useState } from 'react';
 import GameCanvas from '@/components/GameCanvas';
 import { PlayerData, Screen, DailyQuest, RoomState, todayDateStr } from './parkingTypes';
-import { getMyFriendCode, getFriends, Friend } from '@/components/FriendsPanel';
 
 // ──────────────── MENU ────────────────
 interface MenuScreenProps {
@@ -9,30 +7,9 @@ interface MenuScreenProps {
   setScreen: (s: Screen) => void;
   onPlay: () => void;
   onQuestClaim?: (questId: string) => void;
-  notify?: (msg: string) => void;
 }
 
-export function MenuScreen({ player, setScreen, onPlay, onQuestClaim, notify }: MenuScreenProps) {
-  const [showAddFriend, setShowAddFriend] = useState(false);
-  const [friendCode, setFriendCode] = useState('');
-  const [friendName, setFriendName] = useState('');
-  const myCode = getMyFriendCode();
-
-  const handleAddFriend = () => {
-    const code = friendCode.trim().toUpperCase();
-    const name = friendName.trim();
-    if (code.length < 8) { notify?.('❌ Код слишком короткий'); return; }
-    if (!name || name.length < 2) { notify?.('❌ Введи имя друга'); return; }
-    if (code === myCode) { notify?.('❌ Нельзя добавить себя'); return; }
-    const existing: Friend[] = getFriends();
-    if (existing.some(f => f.code === code)) { notify?.('⚠️ Уже добавлен'); return; }
-    const updated = [...existing, { code, name, emoji: '👤', addedAt: Date.now() }];
-    localStorage.setItem('parking_friends_v1', JSON.stringify(updated));
-    setFriendCode('');
-    setFriendName('');
-    setShowAddFriend(false);
-    notify?.(`✅ ${name} добавлен! Бонус +10% монет при совместной игре`);
-  };
+export function MenuScreen({ player, setScreen, onPlay, onQuestClaim }: MenuScreenProps) {
   const today = todayDateStr();
   const quests: DailyQuest[] = player.dailyQuestsDate === today ? (player.dailyQuests ?? []) : [];
   const hasActiveQuests = quests.some(q => !q.done || q.progress < q.goal);
@@ -126,41 +103,13 @@ export function MenuScreen({ player, setScreen, onPlay, onQuestClaim, notify }: 
             <button className="btn-purple animate-fade-in" onClick={() => setScreen('shop')}>🛒 Магазин</button>
             <button className="btn-orange animate-fade-in" onClick={() => setScreen('profile')}>👤 Профиль</button>
             <button className="btn-green animate-fade-in" onClick={() => setScreen('leaderboard')}>🏆 Топ игроков</button>
+            <button className="col-span-2 animate-fade-in card-game py-2.5 flex items-center justify-center gap-2 hover:border-yellow-400/30 transition-all" onClick={() => setScreen('friends')}>
+              <span className="text-lg">👥</span>
+              <span className="font-russo text-white/70 text-sm">Друзья</span>
+              <span className="text-white/30 text-xs ml-1">+10% монет при игре вместе</span>
+            </button>
           </div>
-          <button
-            className="w-full card-game py-2.5 flex items-center justify-center gap-2 hover:border-yellow-400/30 transition-all animate-fade-in"
-            onClick={() => setShowAddFriend(v => !v)}
-          >
-            <span className="text-base">👥</span>
-            <span className="font-russo text-white/60 text-sm">Добавить друга</span>
-            <span className="text-white/30 text-xs ml-auto">{showAddFriend ? '▲' : '▼'}</span>
-          </button>
 
-          {showAddFriend && (
-            <div className="card-game-solid p-4 flex flex-col gap-3 animate-fade-in">
-              <div className="bg-white/5 rounded-xl px-3 py-2 flex items-center gap-2">
-                <span className="font-nunito text-white/30 text-xs">Твой код:</span>
-                <span className="font-russo text-yellow-400 text-sm tracking-widest flex-1">{myCode}</span>
-              </div>
-              <input
-                className="bg-white/5 border border-white/10 rounded-xl px-3 py-2 font-russo text-white text-sm outline-none focus:border-yellow-500/50 placeholder:text-white/20 uppercase tracking-wider"
-                placeholder="КОД ДРУГА"
-                value={friendCode}
-                maxLength={16}
-                onChange={e => setFriendCode(e.target.value.toUpperCase())}
-              />
-              <input
-                className="bg-white/5 border border-white/10 rounded-xl px-3 py-2 font-nunito text-white text-sm outline-none focus:border-yellow-500/50 placeholder:text-white/20"
-                placeholder="Имя друга"
-                value={friendName}
-                maxLength={20}
-                onChange={e => setFriendName(e.target.value)}
-              />
-              <button className="btn-yellow py-2 font-russo text-sm" onClick={handleAddFriend}>
-                Добавить
-              </button>
-            </div>
-          )}
         </div>
 
         <p className="text-white/20 text-xs font-nunito">v0.1.0 — Ранний доступ</p>

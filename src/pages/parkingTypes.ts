@@ -1,4 +1,4 @@
-export type Screen = 'login' | 'menu' | 'game' | 'gameOver' | 'garage' | 'shop' | 'profile' | 'leaderboard';
+export type Screen = 'login' | 'menu' | 'game' | 'gameOver' | 'garage' | 'shop' | 'profile' | 'leaderboard' | 'friends';
 
 export const SAVE_KEY = 'king_parking_profile_v1';
 export const SESSION_KEY = 'king_parking_session';
@@ -173,19 +173,26 @@ export async function apiAuth(action: string, payload: Record<string, unknown>) 
 const LB_CACHE_KEY = 'parking_lb_cache';
 const LB_CACHE_TTL = 5 * 60 * 1000; // 5 минут
 
-export async function fetchLeaderboard(): Promise<LeaderEntry[]> {
+export interface LeaderboardResult {
+  leaders: LeaderEntry[];
+  myRank?: number | null;
+}
+
+export async function fetchLeaderboard(playerName?: string): Promise<LeaderboardResult> {
   try {
-    const cached = localStorage.getItem(LB_CACHE_KEY);
+    const cacheKey = LB_CACHE_KEY + (playerName ? `_${playerName}` : '');
+    const cached = localStorage.getItem(cacheKey);
     if (cached) {
       const { ts, data } = JSON.parse(cached);
       if (Date.now() - ts < LB_CACHE_TTL) return data;
     }
-    const res = await fetch(LEADERBOARD_URL);
+    const url = playerName ? `${LEADERBOARD_URL}?name=${encodeURIComponent(playerName)}` : LEADERBOARD_URL;
+    const res = await fetch(url);
     const json = await res.json();
-    const leaders = json.leaders || [];
-    localStorage.setItem(LB_CACHE_KEY, JSON.stringify({ ts: Date.now(), data: leaders }));
-    return leaders;
-  } catch { return []; }
+    const result: LeaderboardResult = { leaders: json.leaders || [], myRank: json.myRank ?? null };
+    localStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), data: result }));
+    return result;
+  } catch { return { leaders: [] }; }
 }
 
 export interface LeaderEntry {

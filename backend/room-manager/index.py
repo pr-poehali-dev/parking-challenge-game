@@ -60,13 +60,28 @@ def resp(data, code=200):
     return {'statusCode': code, 'headers': {**cors(), 'Content-Type': 'application/json'}, 'body': json.dumps(data, ensure_ascii=False)}
 
 
-def find_or_create_room(db) -> str:
-    """Ищет свежую комнату в ожидании или создаёт новую.
-    Игнорирует зависшие комнаты (таймаут прошёл более 60 сек назад без реальных игроков)."""
+def find_or_create_room(db, friend_codes: list = None) -> str:
+    """Ищет комнату в ожидании — сначала с друзьями, потом любую, или создаёт новую."""
     cur = db.cursor()
     now_ms = int(time.time() * 1000)
-    stale_threshold = now_ms - 60_000  # старше 1 минуты после таймаута = мёртвая
-    # Ищем живую комнату: либо таймаут ещё не вышел, либо вышел недавно
+    stale_threshold = now_ms - 60_000
+
+    # Если есть коды друзей — ищем комнату где уже есть хотя бы один из них
+    if friend_codes:
+        for code in friend_codes:
+            cur.execute(
+                f"SELECT r.id FROM {SCHEMA}.rooms r "
+                f"JOIN {SCHEMA}.room_players rp ON rp.room_id = r.id "
+                f"WHERE r.status='waiting' AND r.timer_end > %s "
+                f"AND rp.is_bot=false AND upper(rp.player_id) LIKE %s "
+                f"ORDER BY r.created_at LIMIT 1",
+                (stale_threshold, f'%{code.upper()}%')
+            )
+            row = cur.fetchone()
+            if row:
+                return row[0]
+
+    # Любая живая комната в ожидании
     cur.execute(
         f"SELECT r.id FROM {SCHEMA}.rooms r "
         f"WHERE r.status='waiting' AND r.timer_end > %s "
@@ -76,6 +91,7 @@ def find_or_create_room(db) -> str:
     row = cur.fetchone()
     if row:
         return row[0]
+
     room_id = str(uuid.uuid4())
     spots = make_spots(MAX_PLAYERS)
     cur.execute(
@@ -196,7 +212,8 @@ def action_join(db, body: dict) -> dict:
     if not player_id:
         return resp({'error': 'playerId required'}, 400)
 
-    room_id = find_or_create_room(db)
+    friend_codes = body.get('friendCodes', []) or []
+    room_id = find_or_create_room(db, friend_codes)
     players = get_room_players(db, room_id)
 
     already_in = any(p['player_id'] == player_id for p in players)

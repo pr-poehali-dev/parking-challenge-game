@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import {
-  Screen, PlayerData, LeaderEntry, RoomState,
+  Screen, PlayerData, LeaderboardResult, RoomState,
   DEFAULT_PLAYER,
   loadProfile, saveProfile, profileToSavePayload,
   apiAuth, fetchLeaderboard, roomApi, getYaPlayer,
@@ -8,7 +8,7 @@ import {
   DAILY_STREAK_REWARDS, makeDailyQuests, todayDateStr,
 } from './parkingTypes';
 import { MenuScreen, GameScreen, GameOverScreen } from './GameScreens';
-import { GarageScreen, ShopScreen, ProfileScreen, LeaderboardScreen } from './PlayerScreens';
+import { GarageScreen, ShopScreen, ProfileScreen, LeaderboardScreen, FriendsScreen } from './PlayerScreens';
 import DailyBonusModal from '@/components/DailyBonusModal';
 import LobbyScreen from '@/components/LobbyScreen';
 import NicknameSetup, { getSavedNick } from '@/components/NicknameSetup';
@@ -24,7 +24,7 @@ export default function Index() {
   const [gameResult, setGameResult] = useState<{ position: number; coinsEarned: number } | null>(null);
   const [notification, setNotification] = useState<string | null>(null);
   const [keys, setKeys] = useState<Set<string>>(new Set());
-  const [onlineLeaders, setOnlineLeaders] = useState<LeaderEntry[]>([]);
+  const [leaderboardData, setLeaderboardData] = useState<LeaderboardResult>({ leaders: [] });
   const [inGamePhase, setInGamePhase] = useState<'playing' | 'roundEnd'>('playing');
   const keysRef = useRef<Set<string>>(new Set());
   const [dailyBonus, setDailyBonus] = useState<{ streak: number; coins: number; gems: number } | null>(null);
@@ -34,6 +34,7 @@ export default function Index() {
   const [localPlayerId, setLocalPlayerId] = useState<string>('');
   const [isLobby, setIsLobby] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const lobbyTimersRef = useRef<{ offline?: ReturnType<typeof setTimeout>; force?: ReturnType<typeof setTimeout> }>({});
   const [needNickname, setNeedNickname] = useState(false);
 
   // YaGames SDK инициализируется в doAutoLogin
@@ -41,9 +42,11 @@ export default function Index() {
   // Load online leaderboard when entering leaderboard screen
   useEffect(() => {
     if (screen === 'leaderboard') {
-      fetchLeaderboard().then(leaders => { if (leaders.length > 0) setOnlineLeaders(leaders); });
+      fetchLeaderboard(player.name).then(result => {
+        if (result.leaders.length > 0) setLeaderboardData(result);
+      });
     }
-  }, [screen]);
+  }, [screen, player.name]);
 
   // Detect returning player on mount + auto-login if session active (runs after checkDailyBonus is defined)
   const autoLoginDone = useRef(false);
@@ -313,7 +316,13 @@ export default function Index() {
     setIsLobby(true);
     stopPolling();
 
+    const clearLobbyTimers = () => {
+      if (lobbyTimersRef.current.offline) { clearTimeout(lobbyTimersRef.current.offline); lobbyTimersRef.current.offline = undefined; }
+      if (lobbyTimersRef.current.force) { clearTimeout(lobbyTimersRef.current.force); lobbyTimersRef.current.force = undefined; }
+    };
+
     const startOfflineGame = () => {
+      clearLobbyTimers();
       setIsLobby(false);
       setRoomState(null);
       setGameKey(k => k + 1);
@@ -321,6 +330,7 @@ export default function Index() {
     };
 
     const startOnlineGame = (st: RoomState, roomId: string) => {
+      clearLobbyTimers();
       setRoomState(st);
       setIsLobby(false);
       setGameKey(k => k + 1);
@@ -330,9 +340,11 @@ export default function Index() {
     };
 
     // Пробуем подключиться к онлайн-комнате в фоне
-    const offlineTimer = setTimeout(startOfflineGame, LOBBY_WAIT_MS);
+    clearLobbyTimers();
+    lobbyTimersRef.current.offline = setTimeout(startOfflineGame, LOBBY_WAIT_MS);
 
     try {
+      const myFriendCodes = getFriends().map(f => f.code);
       const joinPromise = roomApi('join', {
         playerId: pid,
         name: displayName,
@@ -340,6 +352,7 @@ export default function Index() {
         color: car?.color ?? '#FF2D55',
         bodyColor: car?.bodyColor ?? '#CC0033',
         maxHp: car?.maxHp ?? 100,
+        friendCodes: myFriendCodes,
       });
       // Таймаут 4 сек — если CSP или сеть блокирует, остаёмся в оффлайн-лобби
       const data = await Promise.race([
@@ -362,7 +375,7 @@ export default function Index() {
       const lobbyTimerEnd = data.timerEnd as number;
 
       // Клиентский таймер: принудительный старт с ботами
-      const forceTimer = setTimeout(async () => {
+      lobbyTimersRef.current.force = setTimeout(async () => {
         try {
           const st = await roomApi('join', {
             playerId: currentPid,
@@ -374,7 +387,6 @@ export default function Index() {
             forceStart: true,
           });
           if (st.status === 'playing') {
-            clearTimeout(offlineTimer);
             startOnlineGame(st as RoomState, lobbyRoomId);
           }
         } catch { startOfflineGame(); }
@@ -385,8 +397,6 @@ export default function Index() {
           const st = await roomApi('state', { roomId: lobbyRoomId });
           setRoomState(st as RoomState);
           if (st.status === 'playing') {
-            clearTimeout(forceTimer);
-            clearTimeout(offlineTimer);
             startOnlineGame(st as RoomState, lobbyRoomId);
           }
         } catch { /* ignore */ }
@@ -453,7 +463,7 @@ export default function Index() {
       )}
 
       {screen === 'menu' && (
-        <MenuScreen player={player} setScreen={setScreen} onPlay={handlePlay} notify={notify} onQuestClaim={(questId) => {
+        <MenuScreen player={player} setScreen={setScreen} onPlay={handlePlay} onQuestClaim={(questId) => {
           setPlayer(prev => {
             const today = todayDateStr();
             const quest = (prev.dailyQuests ?? []).find(q => q.id === questId);
@@ -476,7 +486,13 @@ export default function Index() {
         <LobbyScreen
           room={roomState}
           localPlayerId={localPlayerId}
-          onCancel={() => { stopPolling(); setIsLobby(false); setRoomState(null); }}
+          onCancel={() => {
+            stopPolling();
+            if (lobbyTimersRef.current.offline) { clearTimeout(lobbyTimersRef.current.offline); lobbyTimersRef.current.offline = undefined; }
+            if (lobbyTimersRef.current.force) { clearTimeout(lobbyTimersRef.current.force); lobbyTimersRef.current.force = undefined; }
+            setIsLobby(false);
+            setRoomState(null);
+          }}
         />
       )}
 
@@ -521,7 +537,11 @@ export default function Index() {
       )}
 
       {screen === 'leaderboard' && (
-        <LeaderboardScreen player={player} onlineLeaders={onlineLeaders} setScreen={setScreen} />
+        <LeaderboardScreen player={player} leaderboardData={leaderboardData} setScreen={setScreen} />
+      )}
+
+      {screen === 'friends' && (
+        <FriendsScreen player={player} setScreen={setScreen} notify={notify} />
       )}
     </div>
   );
