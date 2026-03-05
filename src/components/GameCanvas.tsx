@@ -1,5 +1,5 @@
 import { useEffect, useRef, useCallback } from 'react';
-import { Car, GameState, GameCanvasProps, CANVAS_W, CANVAS_H, CENTER_X, CENTER_Y, EXCL_LEFT, EXCL_RIGHT, EXCL_TOP, EXCL_BOTTOM } from './gameTypes';
+import { Car, GameState, GameCanvasProps, CANVAS_W, CANVAS_H, CENTER_X, CENTER_Y, EXCL_LEFT, EXCL_RIGHT, EXCL_TOP, EXCL_BOTTOM, EXCL_RADIUS } from './gameTypes';
 import { createInitialState, makeSpotsGrid, applyRoomState, spawnParticles, blockParkingZone, resolveAllCollisions } from './gameLogic';
 import { drawAsphalt, drawParkingArea, drawCar, drawParticles, drawSignal, drawRoundEnd, drawWinner, drawHUD, drawGpsOverlay } from './gameRenderer';
 
@@ -183,9 +183,8 @@ export default function GameCanvas({ playerName, playerId, playerHp, playerMaxHp
 
           // Force minimum movement during driving phase
           if (!state.signal) {
-            const nearExcl =
-              player.x > EXCL_LEFT - 40 && player.x < EXCL_RIGHT + 40 &&
-              player.y > EXCL_TOP  - 40 && player.y < EXCL_BOTTOM + 40;
+            const distToCenter = Math.hypot(player.x - CENTER_X, player.y - CENTER_Y);
+            const nearExcl = distToCenter < EXCL_RADIUS + 60;
             const minSpeed = nearExcl ? 1.5 * hpFactor : 0.7 * hpFactor;
             if (player.speed < minSpeed) player.speed = minSpeed;
           }

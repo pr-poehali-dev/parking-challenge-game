@@ -2,7 +2,7 @@ import {
   Car, ParkingSpot, GameState, RoomPlayer, RoomState,
   CENTER_X, CENTER_Y,
   PARK_LEFT, PARK_RIGHT, PARK_TOP, PARK_BOTTOM,
-  EXCL_LEFT, EXCL_RIGHT, EXCL_TOP, EXCL_BOTTOM,
+  EXCL_LEFT, EXCL_RIGHT, EXCL_TOP, EXCL_BOTTOM, EXCL_RADIUS,
   CAR_COLORS, CAR_EMOJIS, CAR_NAMES,
 } from './gameTypes';
 
@@ -12,17 +12,16 @@ export function isInsideParkingZone(x: number, y: number): boolean {
 
 // Push car firmly outside the exclusion zone before signal
 export function blockParkingZone(car: Car) {
-  if (car.x > EXCL_LEFT && car.x < EXCL_RIGHT &&
-      car.y > EXCL_TOP  && car.y < EXCL_BOTTOM) {
-    const dLeft   = car.x - EXCL_LEFT;
-    const dRight  = EXCL_RIGHT  - car.x;
-    const dTop    = car.y - EXCL_TOP;
-    const dBottom = EXCL_BOTTOM - car.y;
-    const minD = Math.min(dLeft, dRight, dTop, dBottom);
-    if      (minD === dLeft)   { car.x = EXCL_LEFT   - 2; car.speed = Math.abs(car.speed) * 0.5; }
-    else if (minD === dRight)  { car.x = EXCL_RIGHT  + 2; car.speed = Math.abs(car.speed) * 0.5; }
-    else if (minD === dTop)    { car.y = EXCL_TOP    - 2; car.speed = Math.abs(car.speed) * 0.5; }
-    else                       { car.y = EXCL_BOTTOM + 2; car.speed = Math.abs(car.speed) * 0.5; }
+  const dx = car.x - CENTER_X;
+  const dy = car.y - CENTER_Y;
+  const dist = Math.hypot(dx, dy);
+  if (dist < EXCL_RADIUS && dist > 0) {
+    // Push car to the circle boundary
+    const nx = dx / dist;
+    const ny = dy / dist;
+    car.x = CENTER_X + nx * (EXCL_RADIUS + 2);
+    car.y = CENTER_Y + ny * (EXCL_RADIUS + 2);
+    car.speed = Math.abs(car.speed) * 0.4;
   }
 }
 

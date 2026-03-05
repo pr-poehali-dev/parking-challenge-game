@@ -9,21 +9,24 @@ interface LobbyScreenProps {
 
 export default function LobbyScreen({ room, localPlayerId, onCancel }: LobbyScreenProps) {
   const [dots, setDots] = useState('');
+  const [secs, setSecs] = useState(Math.max(0, Math.ceil((room.timerEnd - Date.now()) / 1000)));
   const realPlayers = room.players.filter(p => !p.is_bot);
-  const secsLeft = Math.max(0, Math.ceil((room.timerEnd - Date.now()) / 1000));
 
   useEffect(() => {
-    const t = setInterval(() => setDots(d => d.length >= 3 ? '' : d + '.'), 500);
+    const t = setInterval(() => {
+      setDots(d => d.length >= 3 ? '' : d + '.');
+      setSecs(Math.max(0, Math.ceil((room.timerEnd - Date.now()) / 1000)));
+    }, 500);
     return () => clearInterval(t);
-  }, []);
+  }, [room.timerEnd]);
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-4 gap-6">
+    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center px-4 gap-6 bg-gray-950/95 backdrop-blur-sm animate-fade-in">
       <div className="text-center animate-fade-in">
         <div className="text-6xl mb-3 animate-float">🅿️</div>
         <h2 className="font-russo text-3xl text-yellow-400">Поиск игроков{dots}</h2>
         <p className="font-nunito text-white/50 text-sm mt-2">
-          Ожидаем других участников. Старт через {secsLeft}с или когда наберётся 10 игроков
+          Ожидаем других участников. Старт через {secs}с или когда наберётся 10 игроков
         </p>
       </div>
 

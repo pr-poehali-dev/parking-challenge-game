@@ -102,12 +102,14 @@ export const PARK_RIGHT  = CENTER_X + PARKING_AREA_W / 2 + 15;
 export const PARK_TOP    = CENTER_Y - PARKING_AREA_H / 2 - 15;
 export const PARK_BOTTOM = CENTER_Y + PARKING_AREA_H / 2 + 15;
 
-// Exclusion zone — cars must stay outside before signal
+// Exclusion zone — cars must stay outside before signal (circular)
 export const EXCL_PAD    = 80;
 export const EXCL_LEFT   = PARK_LEFT   - EXCL_PAD;
 export const EXCL_RIGHT  = PARK_RIGHT  + EXCL_PAD;
 export const EXCL_TOP    = PARK_TOP    - EXCL_PAD;
 export const EXCL_BOTTOM = PARK_BOTTOM + EXCL_PAD;
+// Circular exclusion radius (replaces rectangular check)
+export const EXCL_RADIUS = 220;
 
 // Car appearance data
 export const CAR_COLORS = [

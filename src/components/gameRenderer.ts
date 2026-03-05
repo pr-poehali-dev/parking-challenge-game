@@ -3,7 +3,7 @@ import {
   CANVAS_W, CANVAS_H, CENTER_X, CENTER_Y,
   SPOT_W, SPOT_H,
   PARK_LEFT, PARK_RIGHT, PARK_TOP, PARK_BOTTOM,
-  EXCL_LEFT, EXCL_RIGHT, EXCL_TOP, EXCL_BOTTOM,
+  EXCL_LEFT, EXCL_RIGHT, EXCL_TOP, EXCL_BOTTOM, EXCL_RADIUS,
 } from './gameTypes';
 
 export function drawCar(ctx: CanvasRenderingContext2D, car: Car, time: number) {
@@ -103,8 +103,7 @@ export function drawCar(ctx: CanvasRenderingContext2D, car: Car, time: number) {
     }
   }
 
-  // Player indicator + nickname
-  const labelY = -carH / 2 - 22;
+  // Player indicator (dot, rotates with car — OK)
   if (car.isPlayer) {
     ctx.beginPath();
     ctx.arc(0, -carH / 2 - 10, 5, 0, Math.PI * 2);
@@ -120,16 +119,6 @@ export function drawCar(ctx: CanvasRenderingContext2D, car: Car, time: number) {
       ctx.fillText('★', 0, -carH / 2 - 18);
     }
   }
-  // Nickname above car
-  const nick = car.name.length > 8 ? car.name.slice(0, 7) + '…' : car.name;
-  ctx.font = `bold ${car.isPlayer ? 11 : 9}px Nunito, sans-serif`;
-  ctx.textAlign = 'center';
-  const nickColor = car.isPlayer ? '#FFD600' : (car.isBot ? 'rgba(255,255,255,0.45)' : '#7DDFFF');
-  ctx.fillStyle = nickColor;
-  ctx.shadowColor = 'rgba(0,0,0,0.8)';
-  ctx.shadowBlur = 4;
-  ctx.fillText(nick, 0, labelY);
-  ctx.shadowBlur = 0;
 
   // HP bar
   const barW = carW + 4;
@@ -146,6 +135,19 @@ export function drawCar(ctx: CanvasRenderingContext2D, car: Car, time: number) {
   ctx.roundRect(barX, barY, barW * healthRatio, barH2, 2);
   ctx.fill();
 
+  ctx.restore();
+
+  // Nickname — drawn AFTER restore so it never rotates with the car
+  const nick = car.name.length > 9 ? car.name.slice(0, 8) + '…' : car.name;
+  const nickColor = car.isPlayer ? '#FFD600' : (car.isBot ? 'rgba(255,255,255,0.45)' : '#7DDFFF');
+  ctx.save();
+  ctx.font = `bold ${car.isPlayer ? 11 : 9}px Nunito, sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.fillStyle = nickColor;
+  ctx.shadowColor = 'rgba(0,0,0,0.9)';
+  ctx.shadowBlur = 5;
+  ctx.fillText(nick, car.x, car.y - 26);
+  ctx.shadowBlur = 0;
   ctx.restore();
 }
 
@@ -169,19 +171,19 @@ export function drawParkingArea(ctx: CanvasRenderingContext2D, spots: ParkingSpo
   ctx.stroke();
   ctx.setLineDash([]);
 
-  // Exclusion zone outer boundary (dashed red halo) when closed
+  // Exclusion zone outer boundary — circular dashed halo when closed
   if (!signalActive) {
-    ctx.strokeStyle = 'rgba(255,45,85,0.25)';
+    ctx.strokeStyle = 'rgba(255,45,85,0.3)';
     ctx.lineWidth = 2;
-    ctx.setLineDash([6, 8]);
+    ctx.setLineDash([8, 10]);
     ctx.beginPath();
-    ctx.roundRect(EXCL_LEFT, EXCL_TOP, EXCL_RIGHT - EXCL_LEFT, EXCL_BOTTOM - EXCL_TOP, 24);
+    ctx.arc(CENTER_X, CENTER_Y, EXCL_RADIUS, 0, Math.PI * 2);
     ctx.stroke();
     ctx.setLineDash([]);
     ctx.fillStyle = 'rgba(255,45,85,0.55)';
     ctx.font = 'bold 11px Russo One, sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('🚫 ВЪЕЗД ЗАКРЫТ', CENTER_X, PARK_TOP - 6);
+    ctx.fillText('🚫 ВЪЕЗД ЗАКРЫТ', CENTER_X, CENTER_Y - EXCL_RADIUS - 6);
   }
 
   ctx.restore();

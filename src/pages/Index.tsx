@@ -13,6 +13,7 @@ import { MenuScreen, GameScreen, GameOverScreen } from './GameScreens';
 import { GarageScreen, ShopScreen, ProfileScreen, LeaderboardScreen } from './PlayerScreens';
 import DailyBonusModal from '@/components/DailyBonusModal';
 import LobbyScreen from '@/components/LobbyScreen';
+import NicknameSetup from '@/components/NicknameSetup';
 
 export default function Index() {
   const [screen, setScreen] = useState<Screen>('login');
@@ -33,6 +34,7 @@ export default function Index() {
   const [localPlayerId, setLocalPlayerId] = useState<string>('');
   const [isLobby, setIsLobby] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [needNickname, setNeedNickname] = useState(false);
 
   // Init YaGames SDK on mount
   useEffect(() => { initYandexGames(); }, []);
@@ -183,19 +185,37 @@ export default function Index() {
     setGameRound(0);
     setInGamePhase('playing');
 
-    // Попробовать войти через Яндекс ID или fallback на имя игрока
+    // Попробовать войти через Яндекс ID
     let pid = localPlayerId;
+    let displayName = player.name;
     if (!pid) {
       const ya = await getYaPlayer();
-      pid = ya?.id || `user_${player.name}_${Date.now()}`;
+      if (ya) {
+        pid = ya.id;
+        // Яндекс-имя может быть пустым или длинным — просим ник
+        if (!ya.name || ya.name.length > 16 || ya.name.length < 2) {
+          setLocalPlayerId(pid);
+          setNeedNickname(true);
+          return;
+        }
+        displayName = ya.name;
+      } else {
+        pid = `user_${player.name}`;
+      }
       setLocalPlayerId(pid);
+    }
+
+    // Если имя ещё не задано (новый игрок без логина)
+    if (!displayName || displayName.length < 2) {
+      setNeedNickname(true);
+      return;
     }
 
     const car = player.cars[player.selectedCar];
     try {
       const data = await roomApi('join', {
         playerId: pid,
-        name: player.name,
+        name: displayName,
         emoji: player.emoji,
         color: car?.color ?? '#FF2D55',
         bodyColor: car?.bodyColor ?? '#CC0033',
@@ -262,6 +282,17 @@ export default function Index() {
 
   return (
     <div className="relative min-h-screen">
+      {needNickname && (
+        <NicknameSetup
+          onDone={(name, emoji) => {
+            setPlayer(prev => ({ ...prev, name, emoji }));
+            setNeedNickname(false);
+            // После выбора ника сразу идём в комнату
+            setTimeout(() => handlePlay(), 100);
+          }}
+        />
+      )}
+
       {dailyBonus && (
         <DailyBonusModal
           streak={dailyBonus.streak}
