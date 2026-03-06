@@ -93,14 +93,20 @@ export function useGameHandlers({ player, setPlayer, roomState, setScreen, notif
       });
 
       const newLevel = levelFromXp(prev.xp + xpEarned);
+      let levelBonusCoins = 0;
+      let levelBonusGems = 0;
       if (newLevel > prev.level) {
-        setTimeout(() => notify(`🆙 Уровень ${newLevel}! +200🪙`), 500);
+        levelBonusCoins = 150 + newLevel * 50;
+        levelBonusGems = newLevel % 5 === 0 ? newLevel : (newLevel % 10 === 0 ? newLevel * 2 : 0);
+        const gemStr = levelBonusGems > 0 ? ` +${levelBonusGems}💎` : '';
+        setTimeout(() => notify(`🆙 Уровень ${newLevel}! +${levelBonusCoins}🪙${gemStr}`), 500);
       }
 
       newCompletedLabels.forEach((msg, i) => setTimeout(() => notify(msg), (i + (newLevel > prev.level ? 1 : 0)) * 2000));
       return {
         ...prev,
-        coins: prev.coins + coinsEarned + (newLevel > prev.level ? 200 : 0),
+        coins: prev.coins + coinsEarned + levelBonusCoins,
+        gems: prev.gems + levelBonusGems,
         xp: prev.xp + xpEarned,
         level: newLevel,
         wins: position === 1 ? prev.wins + 1 : prev.wins,

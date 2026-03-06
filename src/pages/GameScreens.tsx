@@ -1,6 +1,18 @@
 import { useState } from 'react';
 import GameCanvas from '@/components/GameCanvas';
+import Icon from '@/components/ui/icon';
 import { PlayerData, Screen, DailyQuest, WeeklyQuest, RoomState, todayDateStr, weeklyDateStr, xpForLevel } from './parkingTypes';
+
+const MUTE_KEY = 'king_parking_muted';
+function useMute() {
+  const [muted, setMuted] = useState(() => localStorage.getItem(MUTE_KEY) === '1');
+  const toggle = () => setMuted(prev => {
+    const next = !prev;
+    localStorage.setItem(MUTE_KEY, next ? '1' : '0');
+    return next;
+  });
+  return { muted, toggle };
+}
 
 // ──────────────── MENU ────────────────
 interface MenuScreenProps {
@@ -206,14 +218,24 @@ export function GameScreen({
   keys, keysRef, setScreen, setPlayer, handleRoundEnd, handleGameEnd, notify,
   roomState, localPlayerId, onPlayerMove,
 }: GameScreenProps) {
+  const { muted, toggle: toggleMute } = useMute();
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4 gap-4">
+    <div className="min-h-screen flex flex-col items-center justify-center px-2 py-2 gap-2">
       <div className="flex items-center justify-between w-full max-w-3xl">
         <button className="btn-red text-sm py-2 px-4" onClick={() => setScreen('menu')}>← Выйти</button>
         <div className={`font-russo text-lg ${gameRound === 0 ? 'text-green-400' : 'text-yellow-400'}`}>
           {gameRound === 0 ? '🟢 Тренировка' : `Раунд ${gameRound}`}
         </div>
-        <div className="coin-badge">🪙 {player.coins.toLocaleString()}</div>
+        <div className="flex items-center gap-2">
+          <button
+            className={`rounded-xl px-3 py-2 transition-all border ${muted ? 'bg-red-500/20 border-red-500/40 text-red-400' : 'bg-white/10 border-white/20 text-white/70 hover:text-white'}`}
+            onClick={toggleMute}
+            title={muted ? 'Включить звук' : 'Выключить звук'}
+          >
+            <Icon name={muted ? 'VolumeX' : 'Volume2'} size={18} />
+          </button>
+          <div className="coin-badge">🪙 {player.coins.toLocaleString()}</div>
+        </div>
       </div>
 
       <div className="w-full max-w-3xl">
@@ -231,6 +253,7 @@ export function GameScreen({
           onRoundEnd={handleRoundEnd}
           onGameEnd={handleGameEnd}
           keys={keys}
+          keysRef={keysRef}
           roomState={roomState}
           onPlayerMove={onPlayerMove}
         />
@@ -263,21 +286,33 @@ export function GameScreen({
         );
       })()}
 
-      <div className="grid grid-cols-3 gap-2 md:hidden">
+      <div className="grid grid-cols-3 gap-2 md:hidden w-full max-w-xs mx-auto select-none">
         <div />
-        <button className="btn-game bg-white/20 text-white border-b-white/10 h-14 text-2xl"
-          onTouchStart={() => { keysRef.current.add('ArrowUp'); }}
-          onTouchEnd={() => { keysRef.current.delete('ArrowUp'); }}>↑</button>
+        <button
+          className="bg-white/20 active:bg-white/40 text-white rounded-2xl h-16 text-3xl font-bold touch-none"
+          onTouchStart={e => { e.preventDefault(); keysRef.current.add('ArrowUp'); }}
+          onTouchEnd={e => { e.preventDefault(); keysRef.current.delete('ArrowUp'); }}
+          onTouchCancel={() => keysRef.current.delete('ArrowUp')}
+        >↑</button>
         <div />
-        <button className="btn-game bg-white/20 text-white border-b-white/10 h-14 text-2xl"
-          onTouchStart={() => { keysRef.current.add('ArrowLeft'); }}
-          onTouchEnd={() => { keysRef.current.delete('ArrowLeft'); }}>←</button>
-        <button className="btn-game bg-white/20 text-white border-b-white/10 h-14 text-2xl"
-          onTouchStart={() => { keysRef.current.add('ArrowDown'); }}
-          onTouchEnd={() => { keysRef.current.delete('ArrowDown'); }}>↓</button>
-        <button className="btn-game bg-white/20 text-white border-b-white/10 h-14 text-2xl"
-          onTouchStart={() => { keysRef.current.add('ArrowRight'); }}
-          onTouchEnd={() => { keysRef.current.delete('ArrowRight'); }}>→</button>
+        <button
+          className="bg-white/20 active:bg-white/40 text-white rounded-2xl h-16 text-3xl font-bold touch-none"
+          onTouchStart={e => { e.preventDefault(); keysRef.current.add('ArrowLeft'); }}
+          onTouchEnd={e => { e.preventDefault(); keysRef.current.delete('ArrowLeft'); }}
+          onTouchCancel={() => keysRef.current.delete('ArrowLeft')}
+        >←</button>
+        <button
+          className="bg-white/20 active:bg-white/40 text-white rounded-2xl h-16 text-3xl font-bold touch-none"
+          onTouchStart={e => { e.preventDefault(); keysRef.current.add('ArrowDown'); }}
+          onTouchEnd={e => { e.preventDefault(); keysRef.current.delete('ArrowDown'); }}
+          onTouchCancel={() => keysRef.current.delete('ArrowDown')}
+        >↓</button>
+        <button
+          className="bg-white/20 active:bg-white/40 text-white rounded-2xl h-16 text-3xl font-bold touch-none"
+          onTouchStart={e => { e.preventDefault(); keysRef.current.add('ArrowRight'); }}
+          onTouchEnd={e => { e.preventDefault(); keysRef.current.delete('ArrowRight'); }}
+          onTouchCancel={() => keysRef.current.delete('ArrowRight')}
+        >→</button>
       </div>
 
       <p className="text-white/30 text-xs text-center font-nunito hidden md:block">

@@ -165,6 +165,15 @@ export interface PlayerData {
     turbo: boolean;
     shield: boolean;
   };
+  upgradeExpiry?: {
+    nitro?: number;
+    gps?: number;
+    bumper?: number;
+    autoRepair?: number;
+    magnet?: number;
+    turbo?: number;
+    shield?: number;
+  };
   loginStreak: number;
   lastLoginDate: string;
   dailyQuests: DailyQuest[];

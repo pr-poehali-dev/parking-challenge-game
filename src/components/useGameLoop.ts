@@ -18,6 +18,7 @@ interface UseGameLoopParams {
   playerName: string;
   upgrades: Upgrades;
   keys: Set<string>;
+  keysRef: MutableRefObject<Set<string>>;
   onRoundEnd: (round: number, isPlayerEliminated: boolean, playerHp: number, playerMaxHp: number) => void;
   onGameEnd: (position: number, roundsPlayed?: number) => void;
   onPlayerMove?: (state: { x: number; y: number; angle: number; speed: number; hp: number; orbitAngle: number; parked: boolean; parkSpot: number; eliminated: boolean }) => void;
@@ -26,20 +27,18 @@ interface UseGameLoopParams {
 
 export function useGameLoop({
   canvasRef, stateRef, animRef, timeRef, moveThrottleRef,
-  playerName, upgrades, keys, onRoundEnd, onGameEnd, onPlayerMove, botAI,
+  playerName, upgrades, keys, keysRef, onRoundEnd, onGameEnd, onPlayerMove, botAI,
 }: UseGameLoopParams) {
   // Ref-обёртки для стабильных замыканий в RAF
   const onRoundEndRef = useRef(onRoundEnd);
   const onGameEndRef = useRef(onGameEnd);
   const onPlayerMoveRef = useRef(onPlayerMove);
   const upgradesRef = useRef(upgrades);
-  const keysRef = useRef(keys);
 
   useEffect(() => { onRoundEndRef.current = onRoundEnd; }, [onRoundEnd]);
   useEffect(() => { onGameEndRef.current = onGameEnd; }, [onGameEnd]);
   useEffect(() => { onPlayerMoveRef.current = onPlayerMove; }, [onPlayerMove]);
   useEffect(() => { upgradesRef.current = upgrades; }, [upgrades]);
-  useEffect(() => { keysRef.current = keys; }, [keys]);
 
   useEffect(() => {
     const canvas = canvasRef.current;

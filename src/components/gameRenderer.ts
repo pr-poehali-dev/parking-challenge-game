@@ -576,10 +576,12 @@ export function drawHUD(ctx: CanvasRenderingContext2D, state: GameState, time: n
   }
 
   // Player info bottom
+  const hasUpgradeIcons = state.playerBumper || state.playerAutoRepair;
+  const boxH = hasUpgradeIcons ? 88 : 70;
   ctx.save();
   ctx.fillStyle = 'rgba(0,0,0,0.5)';
   ctx.beginPath();
-  ctx.roundRect(10, CANVAS_H - 80, 200, 70, 12);
+  ctx.roundRect(10, CANVAS_H - boxH - 10, 200, boxH, 12);
   ctx.fill();
 
   ctx.fillStyle = '#FFD600';
@@ -600,28 +602,26 @@ export function drawHUD(ctx: CanvasRenderingContext2D, state: GameState, time: n
 
   ctx.fillStyle = 'rgba(255,255,255,0.6)';
   ctx.font = '11px Nunito, sans-serif';
-  ctx.fillText(`❤️ ${Math.round(player.hp)} / ${player.maxHp}`, 20, CANVAS_H - 22);
+  ctx.fillText(`❤️ ${Math.round(player.hp)} / ${player.maxHp}`, 20, CANVAS_H - 30);
 
-  if (player.parked) {
-    ctx.fillStyle = '#34C759';
-    ctx.font = 'bold 11px Russo One, sans-serif';
-    ctx.fillText('✅ ПРИПАРКОВАН!', 20, CANVAS_H - 8);
-  }
-  ctx.restore();
-
-  // Active upgrades icons
+  // Active upgrades icons — on a separate line below HP text
   const activeUpgrades = [];
   if (state.playerBumper) activeUpgrades.push('🛡️');
   if (state.playerAutoRepair) activeUpgrades.push('🔧');
   if (activeUpgrades.length > 0) {
-    ctx.save();
-    ctx.font = '16px sans-serif';
-    ctx.textAlign = 'left';
+    ctx.font = '13px sans-serif';
     activeUpgrades.forEach((icon, i) => {
-      ctx.fillText(icon, 200 + i * 28, CANVAS_H - 22);
+      ctx.fillText(icon, 20 + i * 20, CANVAS_H - 14);
     });
-    ctx.restore();
   }
+
+  if (player.parked) {
+    ctx.fillStyle = '#34C759';
+    ctx.font = 'bold 11px Russo One, sans-serif';
+    const parkX = hasUpgradeIcons ? 20 + activeUpgrades.length * 20 + 6 : 20;
+    ctx.fillText('✅ ПРИПАРКОВАН!', parkX, CANVAS_H - 14);
+  }
+  ctx.restore();
 
   // Controls hint
   if (state.signal && state.phase === 'signal' && !player.parked) {

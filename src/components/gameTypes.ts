@@ -80,6 +80,7 @@ export interface GameCanvasProps {
   onRoundEnd: (round: number, isPlayerEliminated: boolean, playerHp: number, playerMaxHp: number) => void;
   onGameEnd: (position: number, roundsPlayed?: number, finalHp?: number) => void;
   keys: Set<string>;
+  keysRef: import('react').MutableRefObject<Set<string>>;
 }
 
 export type { RoomPlayer, RoomState };

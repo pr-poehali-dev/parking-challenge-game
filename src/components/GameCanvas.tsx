@@ -8,7 +8,7 @@ import { useGameLoop } from './useGameLoop';
 export default function GameCanvas({
   playerName, playerId, playerHp, playerMaxHp,
   playerColor, playerBodyColor, playerEmoji, playerMaxSpeed,
-  upgrades, onRoundEnd, onGameEnd, keys, roomState, onPlayerMove,
+  upgrades, onRoundEnd, onGameEnd, keys, keysRef, roomState, onPlayerMove,
 }: GameCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const stateRef = useRef<GameState>(createInitialState(playerName, playerHp, playerMaxHp, playerColor, playerBodyColor, playerEmoji, playerMaxSpeed));
@@ -23,7 +23,7 @@ export default function GameCanvas({
 
   useGameLoop({
     canvasRef, stateRef, animRef, timeRef, moveThrottleRef,
-    playerName, upgrades, keys, onRoundEnd, onGameEnd, onPlayerMove, botAI,
+    playerName, upgrades, keys, keysRef, onRoundEnd, onGameEnd, onPlayerMove, botAI,
   });
 
   return (
