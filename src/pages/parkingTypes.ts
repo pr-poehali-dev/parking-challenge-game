@@ -280,34 +280,71 @@ export const DAILY_STREAK_REWARDS: { coins: number; gems: number }[] = [
 
 export function makeDailyQuests(dateStr?: string): DailyQuest[] {
   const d = new Date(dateStr ?? todayDateStr());
-  const day = d.getDay();
-  const seed = d.getDate() + d.getMonth() * 31;
-  const hard = seed % 3 === 0;
+  const seed = d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
 
-  const playGoal = [3, 3, 4, 4, 5, 5, 3][day];
-  const topN = hard ? 3 : 5;
-  const surviveRound = hard ? 7 : 5;
+  function rng(s: number) {
+    const x = Math.sin(s) * 99317;
+    return x - Math.floor(x);
+  }
 
-  return [
+  const playGoals = [2, 3, 3, 4, 4, 5];
+  const topNOptions = [3, 3, 4, 5, 5];
+  const surviveOptions = [4, 5, 5, 6, 7];
+  const winOptions = [1, 2, 2, 3];
+
+  const playGoal = playGoals[Math.floor(rng(seed + 1) * playGoals.length)];
+  const topN = topNOptions[Math.floor(rng(seed + 2) * topNOptions.length)];
+  const surviveRound = surviveOptions[Math.floor(rng(seed + 3) * surviveOptions.length)];
+  const winGoal = winOptions[Math.floor(rng(seed + 4) * winOptions.length)];
+
+  const allQuests: DailyQuest[] = [
     {
       id: 'play3',
-      label: `Сыграй ${playGoal} ${playGoal === 3 ? 'игры' : 'игр'}`,
+      label: `Сыграй ${playGoal} ${playGoal === 1 ? 'игру' : playGoal < 5 ? 'игры' : 'игр'}`,
       goal: playGoal, progress: 0, done: false, claimed: false,
-      reward: { coins: 100 + playGoal * 30 },
+      reward: { coins: 80 + playGoal * 40 },
     },
     {
       id: 'top5',
       label: `Финишируй в топ-${topN}`,
       goal: 1, progress: 0, done: false, claimed: false,
-      reward: { coins: topN === 3 ? 350 : 200, gems: topN === 3 ? 1 : 0 },
+      reward: { coins: topN <= 3 ? 350 : 200, gems: topN <= 3 ? 1 : 0 },
     },
     {
       id: 'survive',
       label: `Доживи до ${surviveRound}-го раунда`,
       goal: surviveRound, progress: 0, done: false, claimed: false,
-      reward: { coins: surviveRound >= 7 ? 400 : 250, gems: 1 },
+      reward: { coins: surviveRound >= 6 ? 380 : 240, gems: surviveRound >= 6 ? 1 : 0 },
+    },
+    {
+      id: 'win',
+      label: `Займи 1-е место ${winGoal === 1 ? 'раз' : winGoal + ' раза'}`,
+      goal: winGoal, progress: 0, done: false, claimed: false,
+      reward: { coins: 200 + winGoal * 100, gems: winGoal >= 2 ? 1 : 0 },
+    },
+    {
+      id: 'play_long',
+      label: 'Сыграй партию без вылета до 8-го раунда',
+      goal: 1, progress: 0, done: false, claimed: false,
+      reward: { coins: 450, gems: 1 },
+    },
+    {
+      id: 'top1_streak',
+      label: 'Финишируй в топ-2 два раза подряд',
+      goal: 2, progress: 0, done: false, claimed: false,
+      reward: { coins: 500, gems: 2 },
     },
   ];
+
+  const pick1 = Math.floor(rng(seed + 10) * 3);
+  const pick2 = 3 + Math.floor(rng(seed + 20) * 3);
+
+  const questPool = [allQuests[pick1], allQuests[pick2]];
+  const remaining = allQuests.filter((_, i) => i !== pick1 && i !== pick2);
+  const pick3idx = Math.floor(rng(seed + 30) * remaining.length);
+  questPool.push(remaining[pick3idx]);
+
+  return questPool;
 }
 
 export function todayDateStr() {

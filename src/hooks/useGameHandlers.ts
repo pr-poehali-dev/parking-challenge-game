@@ -53,12 +53,22 @@ export function useGameHandlers({ player, setPlayer, roomState, setScreen, notif
       const today = todayDateStr();
       const baseQuests = prev.dailyQuestsDate === today ? prev.dailyQuests : makeDailyQuests(today);
       const newCompletedLabels: string[] = [];
+      const rounds = roundsPlayed ?? 0;
       const newQuests = baseQuests.map(q => {
         if (q.done) return q;
         let progress = q.progress;
         if (q.id === 'play3') progress = Math.min(q.goal, progress + 1);
-        if (q.id === 'top5' && position <= (q.label.includes('топ-3') ? 3 : 5)) progress = Math.min(q.goal, progress + 1);
-        if (q.id === 'survive') progress = Math.max(progress, Math.min(q.goal, roundsPlayed ?? 0));
+        if (q.id === 'top5') {
+          const threshold = q.label.includes('топ-3') ? 3 : q.label.includes('топ-4') ? 4 : 5;
+          if (position <= threshold) progress = Math.min(q.goal, progress + 1);
+        }
+        if (q.id === 'survive') progress = Math.max(progress, Math.min(q.goal, rounds));
+        if (q.id === 'win' && position === 1) progress = Math.min(q.goal, progress + 1);
+        if (q.id === 'play_long' && rounds >= 8) progress = Math.min(q.goal, progress + 1);
+        if (q.id === 'top1_streak') {
+          if (position <= 2) progress = Math.min(q.goal, progress + 1);
+          else progress = 0;
+        }
         const done = progress >= q.goal;
         if (done && !q.done) newCompletedLabels.push(`🎯 ${q.label} — готово! Забери награду`);
         return { ...q, progress, done };

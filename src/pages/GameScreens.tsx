@@ -47,7 +47,7 @@ export function MenuScreen({ player, setScreen, onPlay, onQuestClaim }: MenuScre
           <div className="flex flex-col items-end gap-0.5">
             <div className="font-russo text-yellow-400 text-lg">Lv.{player.level}</div>
             {streak > 0 && <div className="text-orange-400 text-xs font-nunito">🔥 {streak} д.</div>}
-            <div className="text-white/20 text-xs font-nunito">сменить ↗</div>
+
           </div>
         </button>
 
