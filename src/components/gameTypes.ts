@@ -50,6 +50,11 @@ export interface GameState {
   shakeTimer: number;
   playerBumper: boolean;
   playerAutoRepair: boolean;
+  playerNitro: boolean;
+  playerGps: boolean;
+  playerMagnet: boolean;
+  playerTurbo: boolean;
+  playerShield: boolean;
 }
 
 export interface Upgrades {

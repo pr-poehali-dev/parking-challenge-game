@@ -185,6 +185,11 @@ export function createInitialState(playerName: string, playerHp?: number, player
     shakeTimer: 0,
     playerBumper: false,
     playerAutoRepair: false,
+    playerNitro: false,
+    playerGps: false,
+    playerMagnet: false,
+    playerTurbo: false,
+    playerShield: false,
   };
 }
 

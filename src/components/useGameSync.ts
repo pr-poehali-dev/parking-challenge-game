@@ -21,6 +21,11 @@ export function useGameSync({ stateRef, upgrades, playerHp, localId, roomState }
   useEffect(() => {
     stateRef.current.playerBumper = upgrades.bumper;
     stateRef.current.playerAutoRepair = upgrades.autoRepair;
+    stateRef.current.playerNitro = upgrades.nitro;
+    stateRef.current.playerGps = upgrades.gps;
+    stateRef.current.playerMagnet = upgrades.magnet;
+    stateRef.current.playerTurbo = upgrades.turbo;
+    stateRef.current.playerShield = upgrades.shield;
   }, [upgrades, stateRef]);
 
   // Sync player HP from outside (after manual repair button)

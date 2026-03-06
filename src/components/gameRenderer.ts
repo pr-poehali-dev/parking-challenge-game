@@ -537,22 +537,12 @@ export function drawHUD(ctx: CanvasRenderingContext2D, state: GameState, time: n
   ctx.fillText(`🅿️ Мест: ${activeSpots}`, 20, 68);
   ctx.restore();
 
-  // Список живых игроков справа (свёрнут по умолчанию)
+  // Список живых игроков справа (только в развёрнутом режиме)
   const aliveCars = state.cars.filter(c => !c.eliminated);
-  const listW = 150;
-  ctx.save();
-  if (aliveCollapsed) {
-    // Только заголовок-таб
-    ctx.fillStyle = 'rgba(0,0,0,0.5)';
-    ctx.beginPath();
-    ctx.roundRect(CANVAS_W - 90, 10, 80, 24, 8);
-    ctx.fill();
-    ctx.fillStyle = '#FFD600';
-    ctx.font = 'bold 11px Russo One, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText(`👥 ${aliveCars.length}`, CANVAS_W - 50, 26);
-  } else {
+  if (!aliveCollapsed) {
+    const listW = 150;
     const listH = Math.min(aliveCars.length, 10) * 18 + 24;
+    ctx.save();
     ctx.fillStyle = 'rgba(0,0,0,0.5)';
     ctx.beginPath();
     ctx.roundRect(CANVAS_W - listW - 10, 10, listW, listH, 10);
@@ -569,8 +559,8 @@ export function drawHUD(ctx: CanvasRenderingContext2D, state: GameState, time: n
       const hpPct = Math.round(c.hp / c.maxHp * 100);
       ctx.fillText(`${c.emoji} ${c.name.slice(0,8)} ${hpPct}%`, CANVAS_W - listW, yy);
     });
+    ctx.restore();
   }
-  ctx.restore();
 
   // Timer (during driving phase)
   if (state.phase === 'driving') {
@@ -625,13 +615,18 @@ export function drawHUD(ctx: CanvasRenderingContext2D, state: GameState, time: n
     ctx.font = 'bold 11px Russo One, sans-serif';
     ctx.fillText('✅ ПРИПАРКОВАН!', 20, CANVAS_H - 22);
   } else {
-    const activeUpgrades = [];
+    const activeUpgrades: string[] = [];
+    if (state.playerNitro) activeUpgrades.push('⚡');
+    if (state.playerGps) activeUpgrades.push('📡');
     if (state.playerBumper) activeUpgrades.push('🛡️');
     if (state.playerAutoRepair) activeUpgrades.push('🔧');
+    if (state.playerMagnet) activeUpgrades.push('🧲');
+    if (state.playerTurbo) activeUpgrades.push('🚀');
+    if (state.playerShield) activeUpgrades.push('🔵');
     if (activeUpgrades.length > 0) {
-      ctx.font = '13px sans-serif';
+      ctx.font = '12px sans-serif';
       activeUpgrades.forEach((icon, i) => {
-        ctx.fillText(icon, 20 + i * 20, CANVAS_H - 22);
+        ctx.fillText(icon, 20 + i * 18, CANVAS_H - 22);
       });
     }
   }

@@ -50,6 +50,11 @@ export function useGameLoop({
     const state = stateRef.current;
     state.playerBumper = upgrades.bumper;
     state.playerAutoRepair = upgrades.autoRepair;
+    state.playerNitro = upgrades.nitro;
+    state.playerGps = upgrades.gps;
+    state.playerMagnet = upgrades.magnet;
+    state.playerTurbo = upgrades.turbo;
+    state.playerShield = upgrades.shield;
 
     const loop = (timestamp: number) => {
       const dt = Math.min((timestamp - timeRef.current) / 1000, 0.05);

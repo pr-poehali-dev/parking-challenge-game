@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { GameState, GameCanvasProps, CANVAS_W, CANVAS_H } from './gameTypes';
 import { createInitialState } from './gameLogic';
 import { useBotAI } from './useBotAI';
@@ -19,12 +19,22 @@ export default function GameCanvas({
 
   const [aliveCollapsed, setAliveCollapsed] = useState(true);
   const aliveCollapsedRef = useRef(true);
+  const [aliveCount, setAliveCount] = useState(10);
 
   const handleToggleAlive = () => {
     const next = !aliveCollapsed;
     aliveCollapsedRef.current = next;
     setAliveCollapsed(next);
   };
+
+  // Обновляем счётчик живых раз в секунду
+  useEffect(() => {
+    const id = setInterval(() => {
+      const count = stateRef.current.cars.filter(c => !c.eliminated).length;
+      setAliveCount(count);
+    }, 500);
+    return () => clearInterval(id);
+  }, []);
 
   const botAI = useBotAI();
 
@@ -36,9 +46,6 @@ export default function GameCanvas({
     aliveCollapsedRef,
   });
 
-  // Canvas scale for overlay button positioning
-  const canvasAspect = CANVAS_H / CANVAS_W;
-
   return (
     <div className="relative w-full" style={{ aspectRatio: `${CANVAS_W}/${CANVAS_H}` }}>
       <canvas
@@ -48,13 +55,13 @@ export default function GameCanvas({
         className="rounded-2xl border-2 border-white/20 w-full h-full"
         style={{ display: 'block' }}
       />
-      {/* Кнопка-тоггл для списка ЖИВЫЕ — позиционируется в правом верхнем углу */}
+      {/* Кнопка-тоггл для списка ЖИВЫЕ */}
       <button
         onClick={handleToggleAlive}
-        className="absolute top-[1.5%] right-[1.5%] text-[10px] font-russo px-2 py-0.5 rounded-lg bg-black/40 border border-yellow-400/30 text-yellow-300 hover:bg-black/60 transition-all"
-        style={{ fontSize: 'clamp(8px, 1.2vw, 11px)' }}
+        className="absolute top-[1.5%] right-[1.5%] font-russo bg-black/50 border border-yellow-400/30 text-yellow-300 hover:bg-black/70 transition-all rounded-lg px-2 py-1 leading-none"
+        style={{ fontSize: 'clamp(9px, 1.3vw, 12px)' }}
       >
-        {aliveCollapsed ? '👥 ▼' : '👥 ▲'}
+        👥 {aliveCount} {aliveCollapsed ? '▼' : '▲'}
       </button>
     </div>
   );

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { PlayerData, Screen, xpForLevel } from './parkingTypes';
+import { PlayerData, Screen, xpForLevel, LEVEL_REWARDS } from './parkingTypes';
 import { ALL_ACHIEVEMENTS, AchDef } from './ProfileScreen';
 
 interface AchievementsScreenProps {
@@ -17,25 +17,6 @@ function claimAch(id: string) {
   const claimed = getClaimedAchs();
   if (!claimed.includes(id)) localStorage.setItem(CLAIMABLE_ACH_KEY, JSON.stringify([...claimed, id]));
 }
-
-// Таблица наград за уровни
-const LEVEL_REWARDS: { level: number; coins: number; gems?: number; bonus?: string }[] = [
-  { level: 1,  coins: 200 },
-  { level: 2,  coins: 250 },
-  { level: 3,  coins: 300 },
-  { level: 4,  coins: 350 },
-  { level: 5,  coins: 500,  gems: 5,  bonus: '🔓 Новый цвет машины' },
-  { level: 6,  coins: 400 },
-  { level: 7,  coins: 450 },
-  { level: 8,  coins: 500 },
-  { level: 9,  coins: 550 },
-  { level: 10, coins: 800,  gems: 10, bonus: '🚗 Скидка 20% в гараже' },
-  { level: 12, coins: 600 },
-  { level: 15, coins: 1000, gems: 15, bonus: '⚡ Нитро бесплатно на день' },
-  { level: 20, coins: 1500, gems: 20, bonus: '👑 Рамка "Элита"' },
-  { level: 25, coins: 2000, gems: 25, bonus: '🏎️ Уникальное авто "Болид+"' },
-  { level: 30, coins: 3000, gems: 30, bonus: '🌟 Статус Легенды' },
-];
 
 const CATEGORY_ORDER = ['Победы', 'Игры', 'Скиллы', 'Богатство', 'Гараж', 'Уровни', 'Серия'];
 

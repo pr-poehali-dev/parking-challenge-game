@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { PlayerData, RoomState, makeDailyQuests, makeWeeklyQuests, todayDateStr, weeklyDateStr, levelFromXp } from '@/pages/parkingTypes';
+import { PlayerData, RoomState, makeDailyQuests, makeWeeklyQuests, todayDateStr, weeklyDateStr, levelFromXp, LEVEL_REWARDS } from '@/pages/parkingTypes';
 import { getFriends, hasFriendInRoom, FRIEND_BONUS } from '@/components/FriendsPanel';
 
 interface UseGameHandlersOptions {
@@ -34,8 +34,9 @@ export function useGameHandlers({ player, setPlayer, roomState, setScreen, notif
     const roomPlayerIds = roomStateRef.current?.players.map(p => p.player_id) ?? [];
     const friendBonus = friends.length > 0 && hasFriendInRoom(roomPlayerIds, friends);
 
-    const baseCoins = Math.max(0, (11 - position) * 50 + Math.floor(Math.random() * 100));
-    const baseXp = Math.max(0, (11 - position) * 30);
+    // Экономика: топ-1 ~200-250 монет, топ-10 ~20 монет
+    const baseCoins = Math.max(10, (11 - position) * 20 + Math.floor(Math.random() * 50));
+    const baseXp = Math.max(10, (11 - position) * 20 + (position === 1 ? 50 : 0));
     const coinsEarned = friendBonus ? Math.round(baseCoins * (1 + FRIEND_BONUS.coins)) : baseCoins;
     const xpEarned = friendBonus ? Math.round(baseXp * (1 + FRIEND_BONUS.xp)) : baseXp;
 
@@ -96,10 +97,21 @@ export function useGameHandlers({ player, setPlayer, roomState, setScreen, notif
       let levelBonusCoins = 0;
       let levelBonusGems = 0;
       if (newLevel > prev.level) {
-        levelBonusCoins = 150 + newLevel * 50;
-        levelBonusGems = newLevel % 5 === 0 ? newLevel : (newLevel % 10 === 0 ? newLevel * 2 : 0);
+        // Начисляем награды за каждый достигнутый уровень по таблице
+        for (let lvl = prev.level + 1; lvl <= newLevel; lvl++) {
+          const reward = LEVEL_REWARDS.find(r => r.level === lvl);
+          if (reward) {
+            levelBonusCoins += reward.coins;
+            levelBonusGems += reward.gems ?? 0;
+          } else {
+            // Уровень без записи в таблице — стандартная награда
+            levelBonusCoins += 100 + lvl * 10;
+          }
+        }
         const gemStr = levelBonusGems > 0 ? ` +${levelBonusGems}💎` : '';
-        setTimeout(() => notify(`🆙 Уровень ${newLevel}! +${levelBonusCoins}🪙${gemStr}`), 500);
+        const bonusEntry = LEVEL_REWARDS.find(r => r.level === newLevel);
+        const bonusText = bonusEntry?.bonus ? ` ${bonusEntry.bonus}` : '';
+        setTimeout(() => notify(`🆙 Уровень ${newLevel}! +${levelBonusCoins}🪙${gemStr}${bonusText}`), 500);
       }
 
       newCompletedLabels.forEach((msg, i) => setTimeout(() => notify(msg), (i + (newLevel > prev.level ? 1 : 0)) * 2000));
