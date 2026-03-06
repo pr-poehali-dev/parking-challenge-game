@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { Screen, LeaderboardResult, RoomState, fetchLeaderboard, todayDateStr, weeklyDateStr } from './parkingTypes';
 import { MenuScreen, GameScreen, GameOverScreen } from './GameScreens';
 import { GarageScreen, ShopScreen, ProfileScreen, LeaderboardScreen, FriendsScreen } from './PlayerScreens';
+import AchievementsScreen from './AchievementsScreen';
 import DailyBonusModal from '@/components/DailyBonusModal';
 import LobbyScreen from '@/components/LobbyScreen';
 import NicknameSetup from '@/components/NicknameSetup';
@@ -221,6 +222,10 @@ export default function Index() {
 
       {screen === 'friends' && (
         <FriendsScreen player={player} localPlayerId={localPlayerId} setScreen={setScreen} notify={notify} />
+      )}
+
+      {screen === 'achievements' && (
+        <AchievementsScreen player={player} setScreen={setScreen} setPlayer={setPlayer} notify={notify} />
       )}
 
     </div>

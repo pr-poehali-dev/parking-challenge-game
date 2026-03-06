@@ -23,11 +23,12 @@ interface UseGameLoopParams {
   onGameEnd: (position: number, roundsPlayed?: number) => void;
   onPlayerMove?: (state: { x: number; y: number; angle: number; speed: number; hp: number; orbitAngle: number; parked: boolean; parkSpot: number; eliminated: boolean }) => void;
   botAI: (car: Car, state: GameState, dt: number) => void;
+  aliveCollapsedRef?: MutableRefObject<boolean>;
 }
 
 export function useGameLoop({
   canvasRef, stateRef, animRef, timeRef, moveThrottleRef,
-  playerName, upgrades, keys, keysRef, onRoundEnd, onGameEnd, onPlayerMove, botAI,
+  playerName, upgrades, keys, keysRef, onRoundEnd, onGameEnd, onPlayerMove, botAI, aliveCollapsedRef,
 }: UseGameLoopParams) {
   // Ref-обёртки для стабильных замыканий в RAF
   const onRoundEndRef = useRef(onRoundEnd);
@@ -346,7 +347,7 @@ export function useGameLoop({
         drawWinner(ctx, state.cars.find(c => c.isPlayer) ?? null, time);
       }
 
-      drawHUD(ctx, state, time);
+      drawHUD(ctx, state, time, aliveCollapsedRef ? aliveCollapsedRef.current : true);
 
       ctx.restore();
 

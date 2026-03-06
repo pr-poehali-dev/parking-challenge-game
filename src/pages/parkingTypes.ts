@@ -1,4 +1,4 @@
-export type Screen = 'login' | 'menu' | 'game' | 'gameOver' | 'garage' | 'shop' | 'profile' | 'leaderboard' | 'friends';
+export type Screen = 'login' | 'menu' | 'game' | 'gameOver' | 'garage' | 'shop' | 'profile' | 'leaderboard' | 'friends' | 'achievements';
 
 export const SAVE_KEY = 'king_parking_profile_v1';
 export const SESSION_KEY = 'king_parking_session';

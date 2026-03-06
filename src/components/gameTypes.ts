@@ -81,6 +81,7 @@ export interface GameCanvasProps {
   onGameEnd: (position: number, roundsPlayed?: number, finalHp?: number) => void;
   keys: Set<string>;
   keysRef: import('react').MutableRefObject<Set<string>>;
+  aliveCollapsedRef?: import('react').MutableRefObject<boolean>;
 }
 
 export type { RoomPlayer, RoomState };

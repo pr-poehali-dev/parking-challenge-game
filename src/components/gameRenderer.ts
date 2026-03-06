@@ -512,7 +512,7 @@ export function drawWinner(ctx: CanvasRenderingContext2D, player: Car | null, ti
   ctx.restore();
 }
 
-export function drawHUD(ctx: CanvasRenderingContext2D, state: GameState, time: number) {
+export function drawHUD(ctx: CanvasRenderingContext2D, state: GameState, time: number, aliveCollapsed = true) {
   const player = state.cars.find(c => c.isPlayer);
   if (!player) return;
 
@@ -537,27 +537,39 @@ export function drawHUD(ctx: CanvasRenderingContext2D, state: GameState, time: n
   ctx.fillText(`🅿️ Мест: ${activeSpots}`, 20, 68);
   ctx.restore();
 
-  // Список живых игроков справа
+  // Список живых игроков справа (свёрнут по умолчанию)
   const aliveCars = state.cars.filter(c => !c.eliminated);
   const listW = 150;
-  const listH = Math.min(aliveCars.length, 10) * 18 + 24;
   ctx.save();
-  ctx.fillStyle = 'rgba(0,0,0,0.5)';
-  ctx.beginPath();
-  ctx.roundRect(CANVAS_W - listW - 10, 10, listW, listH, 10);
-  ctx.fill();
-  ctx.fillStyle = '#FFD600';
-  ctx.font = 'bold 11px Russo One, sans-serif';
-  ctx.textAlign = 'left';
-  ctx.fillText('ЖИВЫЕ', CANVAS_W - listW, 24);
-  aliveCars.slice(0, 10).forEach((c, i) => {
-    const yy = 40 + i * 18;
-    const isMe = c.isPlayer;
-    ctx.fillStyle = isMe ? '#FFD600' : c.isBot ? 'rgba(255,255,255,0.4)' : '#7DDFFF';
-    ctx.font = `${isMe ? 'bold ' : ''}10px Nunito, sans-serif`;
-    const hpPct = Math.round(c.hp / c.maxHp * 100);
-    ctx.fillText(`${c.emoji} ${c.name.slice(0,8)} ${hpPct}%`, CANVAS_W - listW, yy);
-  });
+  if (aliveCollapsed) {
+    // Только заголовок-таб
+    ctx.fillStyle = 'rgba(0,0,0,0.5)';
+    ctx.beginPath();
+    ctx.roundRect(CANVAS_W - 90, 10, 80, 24, 8);
+    ctx.fill();
+    ctx.fillStyle = '#FFD600';
+    ctx.font = 'bold 11px Russo One, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(`👥 ${aliveCars.length}`, CANVAS_W - 50, 26);
+  } else {
+    const listH = Math.min(aliveCars.length, 10) * 18 + 24;
+    ctx.fillStyle = 'rgba(0,0,0,0.5)';
+    ctx.beginPath();
+    ctx.roundRect(CANVAS_W - listW - 10, 10, listW, listH, 10);
+    ctx.fill();
+    ctx.fillStyle = '#FFD600';
+    ctx.font = 'bold 11px Russo One, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText(`👥 ЖИВЫЕ (${aliveCars.length})`, CANVAS_W - listW, 24);
+    aliveCars.slice(0, 10).forEach((c, i) => {
+      const yy = 40 + i * 18;
+      const isMe = c.isPlayer;
+      ctx.fillStyle = isMe ? '#FFD600' : c.isBot ? 'rgba(255,255,255,0.4)' : '#7DDFFF';
+      ctx.font = `${isMe ? 'bold ' : ''}10px Nunito, sans-serif`;
+      const hpPct = Math.round(c.hp / c.maxHp * 100);
+      ctx.fillText(`${c.emoji} ${c.name.slice(0,8)} ${hpPct}%`, CANVAS_W - listW, yy);
+    });
+  }
   ctx.restore();
 
   // Timer (during driving phase)
@@ -575,51 +587,53 @@ export function drawHUD(ctx: CanvasRenderingContext2D, state: GameState, time: n
     ctx.restore();
   }
 
-  // Player info bottom
-  const hasUpgradeIcons = state.playerBumper || state.playerAutoRepair;
-  const boxH = hasUpgradeIcons ? 88 : 70;
+  // Player info bottom — fixed layout:
+  // row1 (name):  CANVAS_H - 72
+  // row2 (hp txt):CANVAS_H - 56
+  // row3 (hp bar): CANVAS_H - 44  (bar h=8)
+  // row4 (icons):  CANVAS_H - 22
   ctx.save();
   ctx.fillStyle = 'rgba(0,0,0,0.5)';
   ctx.beginPath();
-  ctx.roundRect(10, CANVAS_H - boxH - 10, 200, boxH, 12);
+  ctx.roundRect(10, CANVAS_H - 90, 200, 80, 12);
   ctx.fill();
 
   ctx.fillStyle = '#FFD600';
   ctx.font = 'bold 13px Russo One, sans-serif';
   ctx.textAlign = 'left';
-  ctx.fillText(`${player.emoji} ${player.name}`, 20, CANVAS_H - 58);
+  ctx.fillText(`${player.emoji} ${player.name}`, 20, CANVAS_H - 72);
 
   const hpRatio = player.hp / player.maxHp;
   const hpColor = hpRatio > 0.6 ? '#34C759' : hpRatio > 0.3 ? '#FF9F0A' : '#FF2D55';
-  ctx.fillStyle = 'rgba(255,255,255,0.3)';
-  ctx.beginPath();
-  ctx.roundRect(20, CANVAS_H - 46, 170, 10, 5);
-  ctx.fill();
-  ctx.fillStyle = hpColor;
-  ctx.beginPath();
-  ctx.roundRect(20, CANVAS_H - 46, 170 * hpRatio, 10, 5);
-  ctx.fill();
 
   ctx.fillStyle = 'rgba(255,255,255,0.6)';
   ctx.font = '11px Nunito, sans-serif';
-  ctx.fillText(`❤️ ${Math.round(player.hp)} / ${player.maxHp}`, 20, CANVAS_H - 30);
+  ctx.fillText(`❤️ ${Math.round(player.hp)} / ${player.maxHp}`, 20, CANVAS_H - 56);
 
-  // Active upgrades icons — on a separate line below HP text
-  const activeUpgrades = [];
-  if (state.playerBumper) activeUpgrades.push('🛡️');
-  if (state.playerAutoRepair) activeUpgrades.push('🔧');
-  if (activeUpgrades.length > 0) {
-    ctx.font = '13px sans-serif';
-    activeUpgrades.forEach((icon, i) => {
-      ctx.fillText(icon, 20 + i * 20, CANVAS_H - 14);
-    });
-  }
+  ctx.fillStyle = 'rgba(255,255,255,0.3)';
+  ctx.beginPath();
+  ctx.roundRect(20, CANVAS_H - 44, 170, 8, 4);
+  ctx.fill();
+  ctx.fillStyle = hpColor;
+  ctx.beginPath();
+  ctx.roundRect(20, CANVAS_H - 44, 170 * hpRatio, 8, 4);
+  ctx.fill();
 
+  // Bottom row — parked status or upgrade icons
   if (player.parked) {
     ctx.fillStyle = '#34C759';
     ctx.font = 'bold 11px Russo One, sans-serif';
-    const parkX = hasUpgradeIcons ? 20 + activeUpgrades.length * 20 + 6 : 20;
-    ctx.fillText('✅ ПРИПАРКОВАН!', parkX, CANVAS_H - 14);
+    ctx.fillText('✅ ПРИПАРКОВАН!', 20, CANVAS_H - 22);
+  } else {
+    const activeUpgrades = [];
+    if (state.playerBumper) activeUpgrades.push('🛡️');
+    if (state.playerAutoRepair) activeUpgrades.push('🔧');
+    if (activeUpgrades.length > 0) {
+      ctx.font = '13px sans-serif';
+      activeUpgrades.forEach((icon, i) => {
+        ctx.fillText(icon, 20 + i * 20, CANVAS_H - 22);
+      });
+    }
   }
   ctx.restore();
 
@@ -632,17 +646,14 @@ export function drawHUD(ctx: CanvasRenderingContext2D, state: GameState, time: n
     ctx.fillText('← → ↑ ↓ движение  |  Space = нитро', CANVAS_W - 15, CANVAS_H - 10);
     ctx.restore();
   } else if (state.phase === 'driving') {
-    // Пульсирующая подсказка "Жди сигнала"
-    const pulse = 0.55 + Math.sin(time * 2.5) * 0.25;
+    // Подсказка "Жди сигнала"
+    const pulse = 0.5 + Math.sin(time * 2.5) * 0.2;
     ctx.save();
     ctx.globalAlpha = pulse;
     ctx.fillStyle = '#FFD600';
     ctx.font = 'bold 13px Russo One, sans-serif';
     ctx.textAlign = 'center';
-    ctx.shadowColor = '#FFD600';
-    ctx.shadowBlur = 10;
     ctx.fillText('⏳ Жди сигнала — машина едет сама, урон не наносится', CENTER_X, CANVAS_H - 12);
-    ctx.shadowBlur = 0;
     ctx.restore();
   }
 }
