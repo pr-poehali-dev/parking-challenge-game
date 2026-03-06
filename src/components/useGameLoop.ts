@@ -3,9 +3,10 @@ import { Car, GameState, Upgrades, CANVAS_W, CANVAS_H, CENTER_X, CENTER_Y } from
 import { makeSpotsGrid, spawnParticles, blockParkingZone, resolveAllCollisions } from './gameLogic';
 import { drawAsphalt, drawParkingArea, drawCar, drawParticles, drawSignal, drawRoundEnd, drawWinner, drawHUD, drawGpsOverlay } from './gameRenderer';
 
-function randomRoundTimer(round: number): number {
-  if (round === 0) return 4 + Math.random() * 3;
-  return 1 + Math.random() * 11;
+function randomRoundTimer(round: number, isFinal: boolean): number {
+  if (round === 0) return 4 + Math.random() * 2;
+  if (isFinal) return 10;
+  return 5 + Math.random() * 7;
 }
 
 interface UseGameLoopParams {
@@ -262,10 +263,10 @@ export function useGameLoop({
           state.round++;
           state.signal = false;
           state.phase = 'driving';
-          state.timer = randomRoundTimer(state.round);
 
           const nextActiveCars = state.cars.filter(c => !c.eliminated);
           state.isFinalRound = nextActiveCars.length === 2;
+          state.timer = randomRoundTimer(state.round, state.isFinalRound);
 
           if (state.round === 1) {
             const availableIdxs = state.spots.map((s, i) => ({ s, i })).filter(({ s }) => s.available).map(({ i }) => i);

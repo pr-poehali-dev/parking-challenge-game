@@ -19,14 +19,25 @@ export function drawCar(ctx: CanvasRenderingContext2D, car: Car, time: number) {
 
   // Player glow (pulsing halo — drawn before car body so it's behind)
   if (car.isPlayer) {
-    const pulse = 0.55 + 0.45 * Math.sin(time * 3.5);
-    const glowRadius = 28 + 6 * pulse;
-    const grad = ctx.createRadialGradient(0, 0, 10, 0, 0, glowRadius);
-    grad.addColorStop(0, `rgba(0,230,118,${0.32 * pulse})`);
-    grad.addColorStop(1, 'rgba(0,230,118,0)');
+    const pulse = 0.6 + 0.4 * Math.sin(time * 4);
+    // Outer soft glow
+    const outerRad = 52 + 8 * pulse;
+    const outerGrad = ctx.createRadialGradient(0, 0, 8, 0, 0, outerRad);
+    outerGrad.addColorStop(0, `rgba(0,230,118,${0.22 * pulse})`);
+    outerGrad.addColorStop(0.5, `rgba(0,230,118,${0.10 * pulse})`);
+    outerGrad.addColorStop(1, 'rgba(0,230,118,0)');
     ctx.beginPath();
-    ctx.arc(0, 0, glowRadius, 0, Math.PI * 2);
-    ctx.fillStyle = grad;
+    ctx.arc(0, 0, outerRad, 0, Math.PI * 2);
+    ctx.fillStyle = outerGrad;
+    ctx.fill();
+    // Inner bright halo
+    const innerRad = 26 + 4 * pulse;
+    const innerGrad = ctx.createRadialGradient(0, 0, 6, 0, 0, innerRad);
+    innerGrad.addColorStop(0, `rgba(0,255,140,${0.55 * pulse})`);
+    innerGrad.addColorStop(1, 'rgba(0,230,118,0)');
+    ctx.beginPath();
+    ctx.arc(0, 0, innerRad, 0, Math.PI * 2);
+    ctx.fillStyle = innerGrad;
     ctx.fill();
   }
 
@@ -46,9 +57,18 @@ export function drawCar(ctx: CanvasRenderingContext2D, car: Car, time: number) {
   ctx.roundRect(-carW / 2, -carH / 2, carW, carH, 6);
   ctx.fillStyle = car.color;
   ctx.fill();
-  ctx.strokeStyle = 'rgba(0,0,0,0.3)';
-  ctx.lineWidth = 1.5;
+  if (car.isPlayer) {
+    const borderPulse = 0.6 + 0.4 * Math.sin(time * 4);
+    ctx.strokeStyle = `rgba(0,255,140,${0.7 + 0.3 * borderPulse})`;
+    ctx.lineWidth = 2.5;
+    ctx.shadowColor = 'rgba(0,255,140,0.9)';
+    ctx.shadowBlur = 10 + 6 * borderPulse;
+  } else {
+    ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+    ctx.lineWidth = 1.5;
+  }
   ctx.stroke();
+  ctx.shadowBlur = 0;
 
   // Roof
   ctx.beginPath();
@@ -138,17 +158,18 @@ export function drawCar(ctx: CanvasRenderingContext2D, car: Car, time: number) {
 
   // Player arrow indicator — drawn in world space (never rotates)
   if (car.isPlayer) {
-    const bounce = Math.sin(time * 4) * 2.5;
+    const bounce = Math.sin(time * 4) * 3;
+    const pulse = 0.6 + 0.4 * Math.sin(time * 4);
     const ax = car.x;
-    const ay = car.y - 46 + bounce;
-    const aw = 10;
-    const ah = 8;
+    const ay = car.y - 50 + bounce;
+    const aw = 13;
+    const ah = 10;
     ctx.save();
-    ctx.shadowColor = 'rgba(0,0,0,0.7)';
-    ctx.shadowBlur = 4;
-    ctx.fillStyle = '#00E676';
-    ctx.strokeStyle = '#00994D';
-    ctx.lineWidth = 1;
+    ctx.shadowColor = 'rgba(0,255,140,0.9)';
+    ctx.shadowBlur = 12 + 6 * pulse;
+    ctx.fillStyle = `rgba(0,255,140,${0.85 + 0.15 * pulse})`;
+    ctx.strokeStyle = '#00E676';
+    ctx.lineWidth = 1.5;
     ctx.beginPath();
     ctx.moveTo(ax, ay + ah);
     ctx.lineTo(ax - aw, ay);
@@ -165,14 +186,20 @@ export function drawCar(ctx: CanvasRenderingContext2D, car: Car, time: number) {
 
   // Nickname — drawn AFTER restore so it never rotates with the car
   const nick = car.name.length > 9 ? car.name.slice(0, 8) + '…' : car.name;
-  const nickColor = car.isPlayer ? '#00E676' : (car.isBot ? 'rgba(255,255,255,0.45)' : '#7DDFFF');
+  const nickColor = car.isPlayer ? '#00FF8C' : (car.isBot ? 'rgba(255,255,255,0.45)' : '#7DDFFF');
   ctx.save();
-  ctx.font = `bold ${car.isPlayer ? 12 : 9}px Nunito, sans-serif`;
+  ctx.font = `bold ${car.isPlayer ? 13 : 9}px Nunito, sans-serif`;
   ctx.textAlign = 'center';
   ctx.fillStyle = nickColor;
-  ctx.shadowColor = 'rgba(0,0,0,0.9)';
-  ctx.shadowBlur = 6;
-  ctx.fillText(nick, car.x, car.y - 58 + Math.sin(time * 4) * 2.5);
+  if (car.isPlayer) {
+    const nickPulse = 0.6 + 0.4 * Math.sin(time * 4);
+    ctx.shadowColor = `rgba(0,255,140,${0.8 * nickPulse})`;
+    ctx.shadowBlur = 10 + 4 * nickPulse;
+  } else {
+    ctx.shadowColor = 'rgba(0,0,0,0.9)';
+    ctx.shadowBlur = 6;
+  }
+  ctx.fillText(nick, car.x, car.y - 64 + Math.sin(time * 4) * 3);
   ctx.shadowBlur = 0;
   ctx.restore();
 }
