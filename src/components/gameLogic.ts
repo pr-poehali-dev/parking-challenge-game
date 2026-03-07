@@ -161,22 +161,21 @@ export function createInitialState(playerName: string, playerHp?: number, player
 
   const spots = makeSpotsGrid(totalSpots);
 
+  const ORBIT_RX = 280; // должно совпадать с useBotAI
+  const ORBIT_RY = 215;
+
   const cars: Car[] = [];
   for (let i = 0; i < totalCars; i++) {
-    // Орбита в безопасных пределах (CENTER=400,300; края canvas=800×600)
-    const orbitRadius = 225;
     const orbitAngle = (i / totalCars) * Math.PI * 2;
     const color = CAR_COLORS[i];
-    // Clockwise orbit tangent in canvas coords (y-down):
-    // position = (cos θ, sin θ)·R, velocity direction = (-sin θ, cos θ)
-    // Car moves as: dx = sin(angle), dy = -cos(angle)
-    // To match: sin(a)=-sinθ, -cos(a)=cosθ  →  a = θ + π
-    const startAngle = orbitAngle + Math.PI;
+    const sx = CENTER_X + Math.cos(orbitAngle) * ORBIT_RX;
+    const sy = CENTER_Y + Math.sin(orbitAngle) * ORBIT_RY;
+    const startAngle = Math.atan2(Math.sin(orbitAngle) * ORBIT_RX, Math.cos(orbitAngle) * ORBIT_RY) + Math.PI / 2;
     cars.push({
       id: i,
       playerId: i === 0 ? 'local_player' : `bot_${i}`,
-      x: CENTER_X + Math.cos(orbitAngle) * orbitRadius,
-      y: CENTER_Y + Math.sin(orbitAngle) * orbitRadius,
+      x: sx,
+      y: sy,
       angle: startAngle,
       speed: 0,
       maxSpeed: i === 0 ? (playerMaxSpeed ?? 3.0) : 2.0 + Math.random() * 1.0,
@@ -187,9 +186,9 @@ export function createInitialState(playerName: string, playerHp?: number, player
       isPlayer: i === 0,
       isBot: i !== 0,
       name: i === 0 ? playerName : CAR_NAMES[i],
-      orbitRadius,
+      orbitRadius: ORBIT_RX,
       orbitAngle,
-      orbitSpeed: 0.016 + Math.random() * 0.008, // always positive = clockwise
+      orbitSpeed: 0.016 + Math.random() * 0.008,
       parked: false,
       parkSpot: null,
       targetSpot: null,

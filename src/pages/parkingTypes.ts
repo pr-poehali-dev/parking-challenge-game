@@ -662,7 +662,20 @@ export function loadProfile(): PlayerData | null {
       const maxSpeed = ic.baseMaxSpeed + speedLevel * UPGRADE_BONUS.speed;
       return { ...ic, owned: saved_car.owned, hp: Math.min(saved_car.hp, maxHp), maxHp, armor, maxSpeed, speed: maxSpeed, hpLevel, armorLevel, speedLevel };
     });
-    const mergedUpgrades = { ...DEFAULT_PLAYER.upgrades, ...(saved.upgrades ?? {}) };
+    // Сбрасываем апгрейды у которых истёк срок или нет expiry-записи
+    const rawUpgrades = { ...DEFAULT_PLAYER.upgrades, ...(saved.upgrades ?? {}) };
+    const expiry = saved.upgradeExpiry ?? {};
+    const now = Date.now();
+    const mergedUpgrades = Object.fromEntries(
+      (Object.keys(rawUpgrades) as (keyof typeof rawUpgrades)[]).map(key => {
+        const active = rawUpgrades[key];
+        if (!active) return [key, false];
+        const exp = expiry[key];
+        // Если апгрейд активен но нет expiry или время вышло — сбрасываем
+        if (!exp || exp < now) return [key, false];
+        return [key, true];
+      })
+    ) as typeof rawUpgrades;
     const today = todayDateStr();
     const thisWeek = weeklyDateStr();
     const dailyQuests = saved.dailyQuestsDate === today ? (saved.dailyQuests ?? makeDailyQuests()) : makeDailyQuests();

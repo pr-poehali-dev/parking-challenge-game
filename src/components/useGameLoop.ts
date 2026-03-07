@@ -274,6 +274,17 @@ export function useGameLoop({
           state.spots.splice(0, state.spots.length, ...makeSpotsGrid(spotsCount));
           state.spots.forEach(s => { s.carId = null; });
 
+          // Восстановление HP между раундами
+          state.cars.filter(c => !c.eliminated).forEach(car => {
+            if (car.isBot) {
+              // Боты восстанавливают до 80% HP чтобы оставаться конкурентоспособными
+              const minHp = car.maxHp * 0.8;
+              if (car.hp < minHp) {
+                car.hp = minHp;
+                spawnParticles(state, car.x, car.y, '#34C759', 5);
+              }
+            }
+          });
           if (state.playerAutoRepair) {
             const playerCar = state.cars.find(c => c.isPlayer);
             if (playerCar) {
@@ -282,17 +293,19 @@ export function useGameLoop({
             }
           }
 
+          const ORBIT_RX = 280;
+          const ORBIT_RY = 215;
           const activeAtReset = state.cars.filter(c => !c.eliminated);
           activeAtReset.forEach((car, idx) => {
             car.parked = false;
             car.parkSpot = null;
             car.targetSpot = null;
-            car.speed = car.isPlayer ? 1 : 0;
+            car.speed = 0;
             const orbitAngle = (idx / activeAtReset.length) * Math.PI * 2;
             car.orbitAngle = orbitAngle;
-            car.x = CENTER_X + Math.cos(orbitAngle) * car.orbitRadius;
-            car.y = CENTER_Y + Math.sin(orbitAngle) * car.orbitRadius;
-            car.angle = orbitAngle + Math.PI;
+            car.x = CENTER_X + Math.cos(orbitAngle) * ORBIT_RX;
+            car.y = CENTER_Y + Math.sin(orbitAngle) * ORBIT_RY;
+            car.angle = Math.atan2(Math.sin(orbitAngle) * ORBIT_RX, Math.cos(orbitAngle) * ORBIT_RY) + Math.PI / 2;
           });
 
           state.spots.forEach(s => {
