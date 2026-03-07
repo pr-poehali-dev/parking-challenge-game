@@ -233,19 +233,20 @@ export function drawParkingArea(ctx: CanvasRenderingContext2D, spots: ParkingSpo
   ctx.stroke();
   ctx.setLineDash([]);
 
-  // Exclusion zone outer boundary — ellipse dashed halo when closed
+  // Exclusion zone outer boundary — круглая пунктирная линия
+  const ORBIT_R = 230;
   if (!signalActive) {
-    ctx.strokeStyle = 'rgba(255,45,85,0.3)';
+    ctx.strokeStyle = 'rgba(255,45,85,0.35)';
     ctx.lineWidth = 2;
     ctx.setLineDash([8, 10]);
     ctx.beginPath();
-    ctx.ellipse(CENTER_X, CENTER_Y, EXCL_RX, EXCL_RY, 0, 0, Math.PI * 2);
+    ctx.arc(CENTER_X, CENTER_Y, ORBIT_R, 0, Math.PI * 2);
     ctx.stroke();
     ctx.setLineDash([]);
-    ctx.fillStyle = 'rgba(255,45,85,0.55)';
+    ctx.fillStyle = 'rgba(255,45,85,0.6)';
     ctx.font = 'bold 11px Russo One, sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('🚫 ВЪЕЗД ЗАКРЫТ', CENTER_X, CENTER_Y - EXCL_RY - 6);
+    ctx.fillText('🚫 ВЪЕЗД ЗАКРЫТ', CENTER_X, CENTER_Y - ORBIT_R - 6);
   }
 
   ctx.restore();

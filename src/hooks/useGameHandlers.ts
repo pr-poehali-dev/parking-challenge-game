@@ -45,10 +45,15 @@ export function useGameHandlers({ player, setPlayer, roomState, setScreen, notif
     const friendBonus = friends.length > 0 && hasFriendInRoom(roomPlayerIds, friends);
 
     // Экономика: топ-1 ~400-450 монет, топ-10 ~50 монет
-    const baseCoins = Math.max(50, (11 - position) * 40 + Math.floor(Math.random() * 60));
+    // Бонус за раунды: +10 монет за каждый раунд выживания (с раунда 2)
+    const rounds = roundsPlayed ?? 0;
+    const roundBonus = Math.max(0, rounds - 1) * 10;
+    const baseCoins = Math.max(50, (11 - position) * 40 + Math.floor(Math.random() * 60)) + roundBonus;
     const baseXp = Math.max(15, (11 - position) * 25 + (position === 1 ? 75 : 0));
     const coinsEarned = friendBonus ? Math.round(baseCoins * (1 + FRIEND_BONUS.coins)) : baseCoins;
     const xpEarned = friendBonus ? Math.round(baseXp * (1 + FRIEND_BONUS.xp)) : baseXp;
+
+    if (roundBonus > 0) notify(`⏱ Бонус за ${rounds} раундов: +${roundBonus} 🪙`);
 
     if (friendBonus) notify(`👥 Бонус друга! +${Math.round(baseCoins * FRIEND_BONUS.coins)} 🪙 +${Math.round(baseXp * FRIEND_BONUS.xp)} XP`);
 
@@ -66,7 +71,7 @@ export function useGameHandlers({ player, setPlayer, roomState, setScreen, notif
       const baseQuests = prev.dailyQuestsDate === today ? prev.dailyQuests : makeDailyQuests(today);
       const baseWeekly = prev.weeklyQuestsDate === thisWeek ? (prev.weeklyQuests ?? []) : makeWeeklyQuests(thisWeek);
       const newCompletedLabels: string[] = [];
-      const rounds = roundsPlayed ?? 0;
+      const rounds2 = roundsPlayed ?? 0;
 
       const newQuests = baseQuests.map(q => {
         if (q.done) return q;
@@ -76,9 +81,9 @@ export function useGameHandlers({ player, setPlayer, roomState, setScreen, notif
           const threshold = q.label.includes('топ-3') ? 3 : q.label.includes('топ-4') ? 4 : 5;
           if (position <= threshold) progress = Math.min(q.goal, progress + 1);
         }
-        if (q.id === 'survive') progress = Math.max(progress, Math.min(q.goal, rounds));
+        if (q.id === 'survive') progress = Math.max(progress, Math.min(q.goal, rounds2));
         if (q.id === 'win' && position === 1) progress = Math.min(q.goal, progress + 1);
-        if (q.id === 'play_long' && rounds >= 8) progress = Math.min(q.goal, progress + 1);
+        if (q.id === 'play_long' && rounds2 >= 8) progress = Math.min(q.goal, progress + 1);
         if (q.id === 'top1_streak') {
           if (position <= 2) progress = Math.min(q.goal, progress + 1);
           else progress = 0;
@@ -95,7 +100,7 @@ export function useGameHandlers({ player, setPlayer, roomState, setScreen, notif
         if (q.id === 'w_play15' || q.id === 'w_play25') progress = Math.min(q.goal, progress + 1);
         if ((q.id === 'w_win5' || q.id === 'w_win10') && position === 1) progress = Math.min(q.goal, progress + 1);
         if (q.id === 'w_top3_10' && position <= 3) progress = Math.min(q.goal, progress + 1);
-        if (q.id === 'w_survive8_3' && rounds >= 8) progress = Math.min(q.goal, progress + 1);
+        if (q.id === 'w_survive8_3' && rounds2 >= 8) progress = Math.min(q.goal, progress + 1);
         if (q.id === 'w_daily7' && allDailyDone) progress = Math.min(q.goal, progress + 1);
         if (q.id === 'w_streak7') progress = Math.min(q.goal, prev.loginStreak + 1);
         const done = progress >= q.goal;
