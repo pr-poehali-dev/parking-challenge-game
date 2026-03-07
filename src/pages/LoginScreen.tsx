@@ -136,7 +136,6 @@ export function PrivacyPolicyModal({ onClose }: PrivacyPolicyModalProps) {
           <button onClick={onClose} className="text-white/40 hover:text-white text-xl">✕</button>
         </div>
         <div className="font-nunito text-white/60 text-sm flex flex-col gap-3">
-          <p>Приложение «Король парковки» («Игра») разработано и поддерживается командой poehali.dev.</p>
           <p><strong className="text-white/80">Какие данные мы собираем:</strong><br/>
             Никнейм, выбранный аватар и игровые показатели (монеты, уровень, результаты игр). Данные сохраняются в защищённой базе данных для синхронизации профиля между устройствами.
           </p>
@@ -148,9 +147,6 @@ export function PrivacyPolicyModal({ onClose }: PrivacyPolicyModalProps) {
           </p>
           <p><strong className="text-white/80">Реклама:</strong><br/>
             В игре могут показываться рекламные объявления через рекламную сеть Яндекса.
-          </p>
-          <p><strong className="text-white/80">Удаление данных:</strong><br/>
-            Чтобы удалить свои данные, напишите нам в Telegram: <a href="https://t.me/+QgiLIa1gFRY4Y2Iy" target="_blank" className="text-yellow-400 underline">сообщество</a>.
           </p>
           <p className="text-white/30 text-xs">Последнее обновление: март 2025</p>
         </div>
