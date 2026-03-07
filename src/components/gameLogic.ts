@@ -26,7 +26,8 @@ export function blockParkingZone(car: Car) {
   }
 }
 
-// Resolve collisions between all non-eliminated cars
+// Resolve collisions between all non-eliminated cars.
+// noDamage=true — только выталкивание (орбита, driving-фаза)
 export function resolveAllCollisions(cars: Car[], state: GameState, noDamage = false) {
   const active = cars.filter(c => !c.eliminated && !c.parked);
   for (let i = 0; i < active.length; i++) {
@@ -42,45 +43,53 @@ export function resolveAllCollisions(cars: Car[], state: GameState, noDamage = f
         const nx = dx / dist;
         const ny = dy / dist;
 
-        // Сила выталкивания: полный overlap, не половина
-        const pushA = a.isPlayer ? 0.45 : 0.55;
-        const pushB = b.isPlayer ? 0.45 : 0.55;
-        a.x -= nx * overlap * pushA;
-        a.y -= ny * overlap * pushA;
-        b.x += nx * overlap * pushB;
-        b.y += ny * overlap * pushB;
+        // Выталкивание: одинаковое для всех
+        a.x -= nx * overlap * 0.5;
+        a.y -= ny * overlap * 0.5;
+        b.x += nx * overlap * 0.5;
+        b.y += ny * overlap * 0.5;
 
-        // Отбрасываем скорость игрока при столкновении с ботом
-        if (a.isPlayer && !noDamage) {
-          const dot = a.speed * nx + 0; // проекция
-          if (dot < 0) a.speed *= 0.4;
-        }
-        if (b.isPlayer && !noDamage) {
-          const dot = b.speed * (-nx) + 0;
-          if (dot < 0) b.speed *= 0.4;
-        }
+        if (noDamage) continue; // на орбите — только расталкиваем, без урона
 
-        if (!noDamage) {
-          // Для ботов используем их эффективную скорость по targetSpot
-          const aEffSpeed = a.isBot && a.targetSpot !== null ? a.maxSpeed * 0.8 : Math.abs(a.speed);
-          const bEffSpeed = b.isBot && b.targetSpot !== null ? b.maxSpeed * 0.8 : Math.abs(b.speed);
-          const relSpeed = Math.abs(aEffSpeed - bEffSpeed) + Math.min(aEffSpeed, bEffSpeed) * 0.5;
+        // Урон только в signal-фазе (после команды ПАРКУЙСЯ)
+        // Для ботов скорость движения к споту — их maxSpeed * коэффициент
+        const aEffSpeed = a.isBot && a.targetSpot !== null
+          ? a.maxSpeed * 0.7
+          : Math.abs(a.speed);
+        const bEffSpeed = b.isBot && b.targetSpot !== null
+          ? b.maxSpeed * 0.7
+          : Math.abs(b.speed);
 
-          if (relSpeed > 0.4) {
-            const dmg = relSpeed * 0.8;
-            const shieldA = a.isPlayer && state.playerShield && !state.shieldUsed;
-            const shieldB = b.isPlayer && state.playerShield && !state.shieldUsed;
-            const aDmg = shieldA ? 0 : (a.isPlayer && state.playerBumper ? dmg * 0.5 : dmg);
-            const bDmg = shieldB ? 0 : (b.isPlayer && state.playerBumper ? dmg * 0.5 : dmg);
-            if (shieldA) state.shieldUsed = true;
-            if (shieldB) state.shieldUsed = true;
-            a.hp = Math.max(0, a.hp - aDmg);
-            b.hp = Math.max(0, b.hp - bDmg);
-            if (relSpeed > 1.2) {
-              spawnParticles(state, (a.x + b.x) / 2, (a.y + b.y) / 2, '#FF6B35', 8);
-              state.shakeTimer = Math.max(state.shakeTimer, 0.2);
-            }
-          }
+        // Урон только при реальном столкновении (хотя бы одна машина движется)
+        const impactSpeed = Math.max(aEffSpeed, bEffSpeed);
+        if (impactSpeed < 0.8) continue;
+
+        // Базовый урон: умеренный, масштабируется со скоростью
+        const baseDmg = impactSpeed * 3.5;
+
+        // Игрок — щит поглощает первый удар
+        const shieldA = a.isPlayer && state.playerShield && !state.shieldUsed;
+        const shieldB = b.isPlayer && state.playerShield && !state.shieldUsed;
+
+        const aDmg = shieldA ? 0 : (a.isPlayer && state.playerBumper ? baseDmg * 0.5 : baseDmg);
+        const bDmg = shieldB ? 0 : (b.isPlayer && state.playerBumper ? baseDmg * 0.5 : baseDmg);
+
+        if (shieldA) state.shieldUsed = true;
+        if (shieldB) state.shieldUsed = true;
+
+        a.hp = Math.max(0, a.hp - aDmg);
+        b.hp = Math.max(0, b.hp - bDmg);
+
+        // Отдача скорости игрока
+        if (a.isPlayer) a.speed *= 0.5;
+        if (b.isPlayer) b.speed *= 0.5;
+
+        // Визуальный эффект только при сильных ударах
+        if (impactSpeed > 2.0) {
+          spawnParticles(state, (a.x + b.x) / 2, (a.y + b.y) / 2, '#FF6B35', 8);
+          state.shakeTimer = Math.max(state.shakeTimer, 0.2);
+        } else if (impactSpeed > 1.2) {
+          spawnParticles(state, (a.x + b.x) / 2, (a.y + b.y) / 2, '#FF9F0A', 4);
         }
       }
     }

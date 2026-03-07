@@ -623,24 +623,31 @@ export function drawHUD(ctx: CanvasRenderingContext2D, state: GameState, time: n
       bumper: state.playerBumper, autoRepair: state.playerAutoRepair,
       magnet: state.playerMagnet, turbo: state.playerTurbo, shield: state.playerShield,
     };
-    const activeUpgrades: string[] = [];
-    if (u.nitro === true) activeUpgrades.push('⚡');
-    if (u.gps === true) activeUpgrades.push('📡');
-    if (u.bumper === true) activeUpgrades.push('🛡️');
-    if (u.autoRepair === true) activeUpgrades.push('🔧');
-    if (u.magnet === true) activeUpgrades.push('🧲');
-    if (u.turbo === true) activeUpgrades.push('🚀');
-    const shieldActive = u.shield === true && !state.shieldUsed;
-    if (shieldActive) activeUpgrades.push('🔵');
-    else if (u.shield === true && state.shieldUsed) activeUpgrades.push('⬛'); // щит использован
+    // Показываем только реально купленные апгрейды
+    type UpgradeItem = { icon: string; tip: string };
+    const activeUpgrades: UpgradeItem[] = [];
+    if (u.nitro === true) activeUpgrades.push({ icon: '⚡', tip: 'Space=нитро' });
+    if (u.gps === true) activeUpgrades.push({ icon: '📡', tip: 'GPS' });
+    if (u.bumper === true) activeUpgrades.push({ icon: '🛡️', tip: '-50% урон' });
+    if (u.autoRepair === true) activeUpgrades.push({ icon: '🔧', tip: '+HP/раунд' });
+    if (u.magnet === true) activeUpgrades.push({ icon: '🧲', tip: 'Магнит' });
+    if (u.turbo === true) activeUpgrades.push({ icon: '🚀', tip: 'Турбо' });
+    if (u.shield === true) {
+      if (!state.shieldUsed) {
+        activeUpgrades.push({ icon: '🔵', tip: '1 удар без урона' });
+      } else {
+        activeUpgrades.push({ icon: '⬜', tip: 'щит потрачен' });
+      }
+    }
     if (activeUpgrades.length > 0) {
-      ctx.font = '12px sans-serif';
-      activeUpgrades.forEach((icon, i) => {
-        ctx.fillText(icon, 20 + i * 18, CANVAS_H - 22);
+      ctx.font = '13px sans-serif';
+      activeUpgrades.forEach((item, i) => {
+        ctx.fillText(item.icon, 20 + i * 22, CANVAS_H - 22);
       });
     }
 
     // Кольцо щита вокруг машины игрока
+    const shieldActive = u.shield === true && !state.shieldUsed;
     if (shieldActive) {
       ctx.save();
       ctx.translate(player.x, player.y);

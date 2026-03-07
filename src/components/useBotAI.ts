@@ -94,6 +94,20 @@ export function useBotAI() {
     // → angle = θ + π даёт нос по часовой
     car.angle = car.orbitAngle + Math.PI;
 
+    // Расталкивание между ботами на орбите (без урона, только позиция)
+    const ORBIT_MIN_ANGLE_GAP = 0.22; // ~12 градусов
+    state.cars.forEach(other => {
+      if (other.id === car.id || other.eliminated || other.parked || other.isPlayer) return;
+      if (state.signal) return; // в signal-фазе расталкивание через resolveAllCollisions
+      const angleDiff = ((car.orbitAngle - other.orbitAngle + Math.PI * 3) % (Math.PI * 2)) - Math.PI;
+      if (Math.abs(angleDiff) < ORBIT_MIN_ANGLE_GAP) {
+        const push = (ORBIT_MIN_ANGLE_GAP - Math.abs(angleDiff)) * 0.15 * Math.sign(angleDiff);
+        car.orbitAngle += push;
+        car.x = CENTER_X + Math.cos(car.orbitAngle) * car.orbitRadius;
+        car.y = CENTER_Y + Math.sin(car.orbitAngle) * car.orbitRadius;
+      }
+    });
+
     if (Math.random() < 0.02) {
       state.driftMarks.push({
         x: car.x + (Math.random() - 0.5) * 10,

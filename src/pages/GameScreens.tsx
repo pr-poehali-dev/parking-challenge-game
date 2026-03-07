@@ -183,7 +183,6 @@ export function MenuScreen({ player, setScreen, onPlay, onQuestClaim, onWeeklyQu
             <button className="btn-orange animate-fade-in" onClick={() => setScreen('profile')}>{t('profile')}</button>
             <button className="btn-green animate-fade-in" onClick={() => setScreen('leaderboard')}>{t('leaderboard')}</button>
             <button className="col-span-2 animate-fade-in card-game py-2.5 flex items-center justify-center gap-2 hover:border-yellow-400/30 transition-all" onClick={() => setScreen('friends')}>
-              <span className="text-lg">👥</span>
               <span className="font-russo text-white/70 text-sm">{t('friends')}</span>
               <span className="text-white/30 text-xs ml-1">{t('friends_bonus')}</span>
             </button>
