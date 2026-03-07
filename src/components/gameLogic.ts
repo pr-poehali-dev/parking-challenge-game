@@ -77,8 +77,8 @@ export function resolveAllCollisions(cars: Car[], state: GameState, noDamage = f
         if (shieldA) state.shieldUsed = true;
         if (shieldB) state.shieldUsed = true;
 
-        a.hp = Math.max(0, a.hp - aDmg);
-        b.hp = Math.max(0, b.hp - bDmg);
+        if (aDmg > 0) { a.hp = Math.max(0, a.hp - aDmg); a.blinkTimer = 0.4; }
+        if (bDmg > 0) { b.hp = Math.max(0, b.hp - bDmg); b.blinkTimer = 0.4; }
 
         // Отдача скорости игрока
         if (a.isPlayer) a.speed *= 0.5;

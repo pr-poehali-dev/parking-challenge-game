@@ -76,6 +76,9 @@ export function useGameLoop({
 
       state.driftMarks = state.driftMarks.filter(d => d.opacity > 0);
       state.driftMarks.forEach(d => { d.opacity -= 0.002; });
+
+      // Декремент blinkTimer (мигание HP при уроне)
+      state.cars.forEach(car => { if (car.blinkTimer > 0) car.blinkTimer = Math.max(0, car.blinkTimer - dt); });
       if (state.driftMarks.length > 200) state.driftMarks.splice(0, 50);
 
       if (state.shakeTimer > 0) state.shakeTimer -= dt;
@@ -83,16 +86,8 @@ export function useGameLoop({
       if (state.phase === 'driving') {
         state.timer -= dt;
 
-        // В фазе driving игрок едет по орбите автоматически (как боты), урон не начисляется
+        // В фазе driving все едут по орбите сквозь друг друга — без столкновений
         state.cars.forEach(car => botAI(car, state, dt));
-
-        state.cars.forEach(car => {
-          if (!car.eliminated && !car.parked && !state.signal) {
-            blockParkingZone(car);
-          }
-        });
-
-        resolveAllCollisions(state.cars, state, true);
 
         if (onPlayerMoveRef.current && time - moveThrottleRef.current > 0.2) {
           moveThrottleRef.current = time;

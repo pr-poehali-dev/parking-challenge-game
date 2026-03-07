@@ -142,20 +142,23 @@ export function drawCar(ctx: CanvasRenderingContext2D, car: Car, time: number) {
 
   // (player arrow drawn after restore, below)
 
-  // HP bar
+  // HP bar (мигает при недавнем уроне через blinkTimer)
   const barW = carW + 4;
   const barH2 = 4;
   const barX = -barW / 2;
   const barY = carH / 2 + 4;
+  const hpColor = healthRatio > 0.6 ? '#34C759' : healthRatio > 0.3 ? '#FF9F0A' : '#FF2D55';
+  const blinkAlpha = car.blinkTimer > 0 ? (0.5 + 0.5 * Math.sin(time * 40)) : 1;
+  ctx.globalAlpha = blinkAlpha;
   ctx.fillStyle = 'rgba(0,0,0,0.4)';
   ctx.beginPath();
   ctx.roundRect(barX, barY, barW, barH2, 2);
   ctx.fill();
-  const hpColor = healthRatio > 0.6 ? '#34C759' : healthRatio > 0.3 ? '#FF9F0A' : '#FF2D55';
-  ctx.fillStyle = hpColor;
+  ctx.fillStyle = car.blinkTimer > 0 ? '#FF2D55' : hpColor;
   ctx.beginPath();
   ctx.roundRect(barX, barY, barW * healthRatio, barH2, 2);
   ctx.fill();
+  ctx.globalAlpha = 1;
 
   ctx.restore();
 
@@ -189,20 +192,23 @@ export function drawCar(ctx: CanvasRenderingContext2D, car: Car, time: number) {
 
   // Nickname — drawn AFTER restore so it never rotates with the car
   const nick = car.name.length > 9 ? car.name.slice(0, 8) + '…' : car.name;
-  const nickColor = car.isPlayer ? '#00FF8C' : (car.isBot ? 'rgba(255,255,255,0.45)' : '#7DDFFF');
+  const nickColor = car.isPlayer ? '#00FF8C' : (car.isBot ? 'rgba(255,255,255,0.55)' : '#7DDFFF');
   ctx.save();
-  ctx.font = `bold ${car.isPlayer ? 13 : 9}px Nunito, sans-serif`;
+  ctx.font = `bold ${car.isPlayer ? 12 : 9}px Nunito, sans-serif`;
   ctx.textAlign = 'center';
   ctx.fillStyle = nickColor;
   if (car.isPlayer) {
     const nickPulse = 0.6 + 0.4 * Math.sin(time * 4);
     ctx.shadowColor = `rgba(0,255,140,${0.8 * nickPulse})`;
-    ctx.shadowBlur = 10 + 4 * nickPulse;
+    ctx.shadowBlur = 8 + 4 * nickPulse;
+    // Игрок: ник чуть выше стрелки
+    ctx.fillText(nick, car.x, car.y - 57 + Math.sin(time * 4) * 2);
   } else {
     ctx.shadowColor = 'rgba(0,0,0,0.9)';
-    ctx.shadowBlur = 6;
+    ctx.shadowBlur = 5;
+    // Боты: ник прямо над HP-баром (carH/2 + 4 = 21px вниз от центра, ник — 10px выше центра)
+    ctx.fillText(nick, car.x, car.y - 30);
   }
-  ctx.fillText(nick, car.x, car.y - 64 + Math.sin(time * 4) * 3);
   ctx.shadowBlur = 0;
   ctx.restore();
 }
@@ -603,14 +609,17 @@ export function drawHUD(ctx: CanvasRenderingContext2D, state: GameState, time: n
   ctx.font = '11px Nunito, sans-serif';
   ctx.fillText(`❤️ ${Math.round(player.hp)} / ${player.maxHp}`, 20, CANVAS_H - 56);
 
+  const hudBlinkAlpha = player.blinkTimer > 0 ? (0.5 + 0.5 * Math.sin(time * 40)) : 1;
   ctx.fillStyle = 'rgba(255,255,255,0.3)';
   ctx.beginPath();
   ctx.roundRect(20, CANVAS_H - 44, 170, 8, 4);
   ctx.fill();
-  ctx.fillStyle = hpColor;
+  ctx.globalAlpha = hudBlinkAlpha;
+  ctx.fillStyle = player.blinkTimer > 0 ? '#FF2D55' : hpColor;
   ctx.beginPath();
   ctx.roundRect(20, CANVAS_H - 44, 170 * hpRatio, 8, 4);
   ctx.fill();
+  ctx.globalAlpha = 1;
 
   // Bottom row — parked status or upgrade icons
   if (player.parked) {
