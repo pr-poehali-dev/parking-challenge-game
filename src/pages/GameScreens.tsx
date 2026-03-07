@@ -254,9 +254,9 @@ export function GameScreen({
         </div>
       </div>
 
-      {/* Canvas — строго 4:3, вписывается в доступное пространство */}
-      <div className="flex-1 min-h-0 flex items-center justify-center overflow-hidden px-1">
-        <div style={{ aspectRatio: '4/3', maxWidth: '100%', maxHeight: '100%', width: '100%' }}>
+      {/* Canvas — строго 4:3, ограничен по высоте */}
+      <div className="flex-1 min-h-0 flex items-center justify-center overflow-hidden">
+        <div style={{ aspectRatio: '4/3', height: '100%', maxHeight: '100%', maxWidth: '100%' }}>
           <GameCanvas
             key={gameKey}
             playerName={player.name}
