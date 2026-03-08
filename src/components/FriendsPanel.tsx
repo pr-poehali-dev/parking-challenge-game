@@ -153,9 +153,9 @@ export default function FriendsPanel({ playerName, playerEmoji, localPlayerId, n
       {/* Добавить друга */}
       <div className="card-game p-4 flex flex-col gap-3">
         <div className="font-russo text-white/50 text-xs uppercase tracking-wider">➕ Добавить друга</div>
-        <div className="flex gap-2">
+        <div className="flex flex-col gap-2">
           <input
-            className="flex-1 bg-white/5 border border-white/10 rounded-xl px-3 py-2 font-russo text-white text-sm outline-none focus:border-yellow-500/50 placeholder:text-white/20 uppercase tracking-wider"
+            className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 font-russo text-white text-sm outline-none focus:border-yellow-500/50 placeholder:text-white/20 uppercase tracking-wider"
             placeholder="КОД ДРУГА"
             value={inputCode}
             maxLength={16}
@@ -163,11 +163,11 @@ export default function FriendsPanel({ playerName, playerEmoji, localPlayerId, n
             onKeyDown={e => e.key === 'Enter' && handleAdd()}
           />
           <button
-            className="btn-yellow px-4 py-2 font-russo text-sm shrink-0 disabled:opacity-50"
+            className="btn-yellow w-full py-2 font-russo text-sm disabled:opacity-50"
             onClick={handleAdd}
             disabled={loading}
           >
-            {loading ? '...' : 'Добавить'}
+            {loading ? '...' : '➕ Добавить'}
           </button>
         </div>
         <p className="text-white/20 text-xs font-nunito">
