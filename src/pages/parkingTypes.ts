@@ -332,6 +332,9 @@ export interface PlayerData {
   weeklyQuests: WeeklyQuest[];
   weeklyQuestsDate: string;
   nicknameChanges?: number;
+  coinBoostSessions?: number;
+  extraLives?: number;
+  xpBoostGames?: number;
 }
 
 export async function apiAuth(action: string, payload: Record<string, unknown>) {
@@ -401,9 +404,9 @@ export interface CarData {
 }
 
 export const UPGRADE_COSTS = {
-  hp:    [100, 200, 350, 500, 750],
-  armor: [150, 300, 500, 750, 1000],
-  speed: [300, 600, 1000],
+  hp:    [300, 600, 1000, 1500, 2500],
+  armor: [400, 800, 1500, 2500, 4000],
+  speed: [800, 1800, 3500],
 } as const;
 
 export const UPGRADE_BONUS = {

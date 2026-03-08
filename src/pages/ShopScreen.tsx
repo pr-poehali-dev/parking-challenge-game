@@ -8,7 +8,7 @@ interface ShopScreenProps {
   notify: (msg: string) => void;
 }
 
-type ShopTab = 'upgrades' | 'coins' | 'gems';
+type ShopTab = 'upgrades' | 'consumables' | 'coins' | 'gems';
 
 const UPGRADE_DURATION_MS = 24 * 60 * 60 * 1000;
 
@@ -97,20 +97,20 @@ export function ShopScreen({ player, setScreen, setPlayer, notify }: ShopScreenP
   };
 
   const coinPacks = [
-    { coins: 500,  gems: 5  },
-    { coins: 1500, gems: 12 },
-    { coins: 4000, gems: 30 },
-    { coins: 12000, gems: 80 },
+    { coins: 300,  gems: 10  },
+    { coins: 800,  gems: 25  },
+    { coins: 2000, gems: 60  },
+    { coins: 5000, gems: 150 },
   ];
 
   const upgrades: { name: string; desc: string; price: number; icon: string; key: keyof typeof player.upgrades; tag?: string }[] = [
-    { name: 'Нитро-ускорение', desc: 'Зажми Space — рывок +40% скорости', price: 200, icon: '⚡', key: 'nitro' },
-    { name: 'GPS-радар', desc: 'Стрелка к ближайшему свободному месту', price: 250, icon: '📡', key: 'gps' },
-    { name: 'Усиленный бампер', desc: '-30% урона при столкновениях', price: 350, icon: '🛡️', key: 'bumper' },
-    { name: 'Авто-ремонт', desc: '+15 HP после каждого раунда', price: 400, icon: '🔧', key: 'autoRepair' },
-    { name: 'Магнит парковки', desc: 'Притягивает к месту в радиусе 50px', price: 450, icon: '🧲', key: 'magnet', tag: 'НОВИНКА' },
-    { name: 'Турбо-старт', desc: 'После сигнала мгновенный разгон x2 на 2 сек', price: 450, icon: '🚀', key: 'turbo', tag: 'НОВИНКА' },
-    { name: 'Силовое поле', desc: 'Первый удар за раунд — без урона', price: 600, icon: '🔵', key: 'shield', tag: 'ХИТ' },
+    { name: 'Нитро-ускорение', desc: 'Зажми Space — рывок +40% скорости', price: 500, icon: '⚡', key: 'nitro' },
+    { name: 'GPS-радар', desc: 'Стрелка к ближайшему свободному месту', price: 600, icon: '📡', key: 'gps' },
+    { name: 'Усиленный бампер', desc: '-30% урона при столкновениях', price: 900, icon: '🛡️', key: 'bumper' },
+    { name: 'Авто-ремонт', desc: '+15 HP после каждого раунда', price: 1000, icon: '🔧', key: 'autoRepair' },
+    { name: 'Магнит парковки', desc: 'Притягивает к месту в радиусе 50px', price: 1200, icon: '🧲', key: 'magnet', tag: 'ХИТ' },
+    { name: 'Турбо-старт', desc: 'После сигнала мгновенный разгон x2 на 2 сек', price: 1200, icon: '🚀', key: 'turbo' },
+    { name: 'Силовое поле', desc: 'Первый удар за раунд — без урона', price: 1800, icon: '🔵', key: 'shield', tag: 'ТОП' },
   ];
 
   const handleBuyUpgrade = (upg: typeof upgrades[0]) => {
@@ -125,8 +125,95 @@ export function ShopScreen({ player, setScreen, setPlayer, notify }: ShopScreenP
     notify(`✅ ${upg.name} куплено на 24 часа!`);
   };
 
+  const consumables: { id: string; name: string; desc: string; icon: string; price: number; action: () => void }[] = [
+    {
+      id: 'repair_small',
+      name: 'Ремкомплект S',
+      desc: 'Восстанавливает 30 HP текущей машине',
+      icon: '🔧',
+      price: 150,
+      action: () => {
+        const car = player.cars[player.selectedCar];
+        if (!car) return;
+        if (car.hp >= car.maxHp) { notify('❌ Машина уже в полном порядке!'); return; }
+        setPlayer(prev => {
+          const cars = prev.cars.map((c, i) => i === prev.selectedCar ? { ...c, hp: Math.min(c.maxHp, c.hp + 30) } : c);
+          return { ...prev, coins: prev.coins - 150, cars };
+        });
+        notify('🔧 +30 HP восстановлено!');
+      },
+    },
+    {
+      id: 'repair_full',
+      name: 'Ремкомплект XL',
+      desc: 'Полностью восстанавливает HP машины',
+      icon: '🛠️',
+      price: 500,
+      action: () => {
+        const car = player.cars[player.selectedCar];
+        if (!car) return;
+        if (car.hp >= car.maxHp) { notify('❌ Машина уже в полном порядке!'); return; }
+        setPlayer(prev => {
+          const cars = prev.cars.map((c, i) => i === prev.selectedCar ? { ...c, hp: c.maxHp } : c);
+          return { ...prev, coins: prev.coins - 500, cars };
+        });
+        notify('🛠️ HP полностью восстановлено!');
+      },
+    },
+    {
+      id: 'coin_boost',
+      name: 'Монетный буст x2',
+      desc: 'Удваивает монеты с игр на 3 сеанса',
+      icon: '💰',
+      price: 800,
+      action: () => {
+        const current = player.coinBoostSessions ?? 0;
+        setPlayer(prev => ({ ...prev, coins: prev.coins - 800, coinBoostSessions: (prev.coinBoostSessions ?? 0) + 3 }));
+        notify(`💰 Буст x2 активирован! (${current + 3} игр)`);
+      },
+    },
+    {
+      id: 'extra_life',
+      name: 'Вторая жизнь',
+      desc: 'Продолжить игру после выбывания (1 раз)',
+      icon: '❤️',
+      price: 1200,
+      action: () => {
+        if ((player.extraLives ?? 0) >= 3) { notify('❌ Максимум 3 жизни в запасе!'); return; }
+        setPlayer(prev => ({ ...prev, coins: prev.coins - 1200, extraLives: (prev.extraLives ?? 0) + 1 }));
+        notify('❤️ Вторая жизнь добавлена в запас!');
+      },
+    },
+    {
+      id: 'xp_boost',
+      name: 'Буст опыта x2',
+      desc: 'Двойной XP за следующие 5 игр',
+      icon: '⭐',
+      price: 600,
+      action: () => {
+        setPlayer(prev => ({ ...prev, coins: prev.coins - 600, xpBoostGames: (prev.xpBoostGames ?? 0) + 5 }));
+        notify('⭐ Буст опыта x2 на 5 игр!');
+      },
+    },
+    {
+      id: 'name_change',
+      name: 'Смена имени',
+      desc: 'Изменить никнейм в профиле',
+      icon: '✏️',
+      price: 2000,
+      action: () => {
+        const newName = prompt('Введи новый никнейм (до 12 символов):');
+        if (!newName || !newName.trim()) return;
+        const trimmed = newName.trim().slice(0, 12);
+        setPlayer(prev => ({ ...prev, coins: prev.coins - 2000, name: trimmed }));
+        notify(`✏️ Никнейм изменён на «${trimmed}»!`);
+      },
+    },
+  ];
+
   const tabs: { id: ShopTab; label: string; emoji: string }[] = [
     { id: 'upgrades', label: 'Улучшения', emoji: '⚡' },
+    { id: 'consumables', label: 'Расходники', emoji: '🛒' },
     { id: 'coins', label: 'Монеты', emoji: '🪙' },
     { id: 'gems', label: 'Кристаллы', emoji: '💎' },
   ];
@@ -194,6 +281,30 @@ export function ShopScreen({ player, setScreen, setPlayer, notify }: ShopScreenP
                     {upg.price} 🪙
                   </button>
                 )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {tab === 'consumables' && (
+        <div className="space-y-2">
+          <p className="text-white/30 text-xs font-nunito text-center">Разовые предметы — тратятся сразу при использовании</p>
+          {consumables.map((item) => {
+            const canAfford = player.coins >= item.price;
+            return (
+              <div key={item.id} className="card-game p-4 flex items-center gap-3">
+                <div className="text-3xl">{item.icon}</div>
+                <div className="flex-1 min-w-0">
+                  <div className="font-russo text-white text-sm">{item.name}</div>
+                  <div className="text-white/30 text-xs font-nunito">{item.desc}</div>
+                </div>
+                <button
+                  className={`text-sm py-2 px-3 shrink-0 rounded-xl font-russo transition-all ${canAfford ? 'bg-yellow-400 text-gray-900 hover:bg-yellow-300 active:scale-95' : 'bg-white/10 text-white/30 cursor-not-allowed'}`}
+                  onClick={() => { if (!canAfford) { notify('❌ Недостаточно монет!'); return; } item.action(); }}
+                >
+                  {item.price.toLocaleString()} 🪙
+                </button>
               </div>
             );
           })}

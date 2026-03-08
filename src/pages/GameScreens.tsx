@@ -196,7 +196,7 @@ export function MenuScreen({ player, setScreen, onPlay, onQuestClaim, onWeeklyQu
           className="text-white/20 text-xs font-nunito hover:text-white/40 transition-colors"
           onClick={() => setShowPrivacy(true)}
         >
-          {t('privacy_policy')} · v0.2.0
+          {t('privacy_policy')} · v1.0
         </button>
       </div>
       {showPrivacy && <PrivacyPolicyModal onClose={() => setShowPrivacy(false)} />}
