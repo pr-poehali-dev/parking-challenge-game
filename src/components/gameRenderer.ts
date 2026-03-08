@@ -222,8 +222,8 @@ export function drawCar(ctx: CanvasRenderingContext2D, car: Car, time: number) {
     const nickPulse = 0.6 + 0.4 * Math.sin(time * 4);
     ctx.shadowColor = `rgba(0,255,140,${0.8 * nickPulse})`;
     ctx.shadowBlur = 8 + 4 * nickPulse;
-    // Игрок: ник чуть выше стрелки
-    ctx.fillText(nick, car.x, car.y - 57 + Math.sin(time * 4) * 2);
+    // Игрок: ник выше стрелки (стрелка на -50, ник ещё выше)
+    ctx.fillText(nick, car.x, car.y - 70 + Math.sin(time * 4) * 2);
   } else {
     ctx.shadowColor = 'rgba(0,0,0,0.9)';
     ctx.shadowBlur = 5;

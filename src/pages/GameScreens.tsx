@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import GameCanvas from '@/components/GameCanvas';
 import { setAudioMuted } from '@/components/gameAudio';
 import Icon from '@/components/ui/icon';
@@ -229,6 +229,17 @@ export function GameScreen({
   roomState, localPlayerId, onPlayerMove,
 }: GameScreenProps) {
   const { muted, toggle: toggleMute } = useMute();
+
+  // Автогаз на мобиле — держим ArrowUp когда идёт игра
+  const isMobileRef = useRef(typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches);
+  useEffect(() => {
+    if (!isMobileRef.current) return;
+    if (inGamePhase === 'playing' && !gameResult) {
+      keysRef.current.add('ArrowUp');
+    } else {
+      keysRef.current.delete('ArrowUp');
+    }
+  }, [inGamePhase, gameResult, keysRef]);
   const car = player.cars[player.selectedCar];
   const repairInfo = (() => {
     if (inGamePhase !== 'roundEnd' || gameResult || !car || car.hp >= car.maxHp) return null;
@@ -309,49 +320,49 @@ export function GameScreen({
         </div>
       )}
 
-      {/* Управление — только мобиль */}
-      <div className="md:hidden shrink-0 flex items-end justify-center gap-4 px-2 pb-2 pt-1 select-none">
-        {/* Стрелки */}
-        <div className="grid grid-cols-3 gap-1.5 w-[168px]">
-          <div />
-          <button
-            className="bg-white/20 active:bg-white/40 text-white rounded-2xl h-14 text-2xl font-bold touch-none"
-            onTouchStart={e => { e.preventDefault(); keysRef.current.add('ArrowUp'); }}
-            onTouchEnd={e => { e.preventDefault(); keysRef.current.delete('ArrowUp'); }}
-            onTouchCancel={() => keysRef.current.delete('ArrowUp')}
-          >↑</button>
-          <div />
-          <button
-            className="bg-white/20 active:bg-white/40 text-white rounded-2xl h-14 text-2xl font-bold touch-none"
-            onTouchStart={e => { e.preventDefault(); keysRef.current.add('ArrowLeft'); }}
-            onTouchEnd={e => { e.preventDefault(); keysRef.current.delete('ArrowLeft'); }}
-            onTouchCancel={() => keysRef.current.delete('ArrowLeft')}
-          >←</button>
-          <button
-            className="bg-white/20 active:bg-white/40 text-white rounded-2xl h-14 text-2xl font-bold touch-none"
-            onTouchStart={e => { e.preventDefault(); keysRef.current.add('ArrowDown'); }}
-            onTouchEnd={e => { e.preventDefault(); keysRef.current.delete('ArrowDown'); }}
-            onTouchCancel={() => keysRef.current.delete('ArrowDown')}
-          >↓</button>
-          <button
-            className="bg-white/20 active:bg-white/40 text-white rounded-2xl h-14 text-2xl font-bold touch-none"
-            onTouchStart={e => { e.preventDefault(); keysRef.current.add('ArrowRight'); }}
-            onTouchEnd={e => { e.preventDefault(); keysRef.current.delete('ArrowRight'); }}
-            onTouchCancel={() => keysRef.current.delete('ArrowRight')}
-          >→</button>
-        </div>
+      {/* Управление — только мобиль (автогаз, повороты + тормоз) */}
+      <div className="md:hidden shrink-0 flex items-center justify-center gap-3 px-3 pb-2 pt-1 select-none">
+        {/* Поворот влево */}
+        <button
+          className="touch-none flex items-center justify-center rounded-2xl text-3xl font-bold text-white active:scale-95 transition-transform"
+          style={{ width: 80, height: 72, background: 'rgba(255,255,255,0.15)', border: '2px solid rgba(255,255,255,0.25)' }}
+          onTouchStart={e => { e.preventDefault(); keysRef.current.add('ArrowLeft'); }}
+          onTouchEnd={e => { e.preventDefault(); keysRef.current.delete('ArrowLeft'); }}
+          onTouchCancel={() => keysRef.current.delete('ArrowLeft')}
+        >←</button>
+
+        {/* Тормоз (центр) */}
+        <button
+          className="touch-none flex flex-col items-center justify-center rounded-2xl text-white active:scale-95 transition-transform gap-0.5"
+          style={{ width: 68, height: 72, background: 'rgba(255,80,80,0.2)', border: '2px solid rgba(255,100,100,0.4)' }}
+          onTouchStart={e => { e.preventDefault(); keysRef.current.add('ArrowDown'); keysRef.current.delete('ArrowUp'); }}
+          onTouchEnd={e => { e.preventDefault(); keysRef.current.delete('ArrowDown'); keysRef.current.add('ArrowUp'); }}
+          onTouchCancel={() => { keysRef.current.delete('ArrowDown'); keysRef.current.add('ArrowUp'); }}
+        >
+          <span style={{ fontSize: 22 }}>⬇</span>
+          <span style={{ fontSize: 9, color: 'rgba(255,150,150,0.9)', fontWeight: 700 }}>ТОРМОЗ</span>
+        </button>
+
+        {/* Поворот вправо */}
+        <button
+          className="touch-none flex items-center justify-center rounded-2xl text-3xl font-bold text-white active:scale-95 transition-transform"
+          style={{ width: 80, height: 72, background: 'rgba(255,255,255,0.15)', border: '2px solid rgba(255,255,255,0.25)' }}
+          onTouchStart={e => { e.preventDefault(); keysRef.current.add('ArrowRight'); }}
+          onTouchEnd={e => { e.preventDefault(); keysRef.current.delete('ArrowRight'); }}
+          onTouchCancel={() => keysRef.current.delete('ArrowRight')}
+        >→</button>
 
         {/* Нитро */}
-        {(player.upgrades?.nitro) && (
+        {player.upgrades?.nitro && (
           <button
-            className="touch-none rounded-2xl flex flex-col items-center justify-center gap-1 active:scale-95 transition-transform"
-            style={{ width: 64, height: 64, background: 'rgba(255,180,0,0.2)', border: '2px solid rgba(255,200,0,0.5)' }}
-            onTouchStart={e => { e.preventDefault(); keysRef.current.add(' '); keysRef.current.add('ArrowUp'); }}
-            onTouchEnd={e => { e.preventDefault(); keysRef.current.delete(' '); keysRef.current.delete('ArrowUp'); }}
-            onTouchCancel={() => { keysRef.current.delete(' '); keysRef.current.delete('ArrowUp'); }}
+            className="touch-none rounded-2xl flex flex-col items-center justify-center gap-0.5 active:scale-95 transition-transform"
+            style={{ width: 68, height: 72, background: 'rgba(255,180,0,0.2)', border: '2px solid rgba(255,200,0,0.5)' }}
+            onTouchStart={e => { e.preventDefault(); keysRef.current.add(' '); }}
+            onTouchEnd={e => { e.preventDefault(); keysRef.current.delete(' '); }}
+            onTouchCancel={() => keysRef.current.delete(' ')}
           >
             <span style={{ fontSize: 24 }}>⚡</span>
-            <span style={{ fontSize: 10, color: 'rgba(255,210,0,0.9)', fontWeight: 700 }}>НИТРО</span>
+            <span style={{ fontSize: 9, color: 'rgba(255,210,0,0.9)', fontWeight: 700 }}>НИТРО</span>
           </button>
         )}
       </div>
