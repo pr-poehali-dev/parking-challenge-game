@@ -195,20 +195,6 @@ export function ShopScreen({ player, setScreen, setPlayer, notify }: ShopScreenP
         notify('⭐ Буст опыта x2 на 5 игр!');
       },
     },
-    {
-      id: 'name_change',
-      name: 'Смена имени',
-      desc: 'Изменить никнейм в профиле',
-      icon: '✏️',
-      price: 2000,
-      action: () => {
-        const newName = prompt('Введи новый никнейм (до 12 символов):');
-        if (!newName || !newName.trim()) return;
-        const trimmed = newName.trim().slice(0, 12);
-        setPlayer(prev => ({ ...prev, coins: prev.coins - 2000, name: trimmed }));
-        notify(`✏️ Никнейм изменён на «${trimmed}»!`);
-      },
-    },
   ];
 
   const tabs: { id: ShopTab; label: string; emoji: string }[] = [
