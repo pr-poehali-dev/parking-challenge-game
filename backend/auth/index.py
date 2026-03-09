@@ -53,6 +53,12 @@ def row_to_profile(row) -> dict:
             'loginStreak': extra.get('loginStreak', 0),
             'lastLoginDate': extra.get('lastLoginDate', ''),
             'level': extra.get('level', 1),
+            'dailyQuests': extra.get('dailyQuests', []),
+            'dailyQuestsDate': extra.get('dailyQuestsDate', ''),
+            'weeklyQuests': extra.get('weeklyQuests', []),
+            'weeklyQuestsDate': extra.get('weeklyQuestsDate', ''),
+            'upgradeExpiry': extra.get('upgradeExpiry', {}),
+            'nicknameChanges': extra.get('nicknameChanges', 0),
         })
     return result
 
@@ -190,6 +196,12 @@ def handler(event: dict, context) -> dict:
                 'loginStreak': profile.get('loginStreak', 0),
                 'lastLoginDate': profile.get('lastLoginDate', ''),
                 'level': profile.get('level', 1),
+                'dailyQuests': profile.get('dailyQuests', []),
+                'dailyQuestsDate': profile.get('dailyQuestsDate', ''),
+                'weeklyQuests': profile.get('weeklyQuests', []),
+                'weeklyQuestsDate': profile.get('weeklyQuestsDate', ''),
+                'upgradeExpiry': profile.get('upgradeExpiry', {}),
+                'nicknameChanges': profile.get('nicknameChanges', 0),
             })
 
             cur.execute(
@@ -235,6 +247,12 @@ def handler(event: dict, context) -> dict:
                 'loginStreak': profile.get('loginStreak', 0),
                 'lastLoginDate': profile.get('lastLoginDate', ''),
                 'level': profile.get('level', 1),
+                'dailyQuests': profile.get('dailyQuests', []),
+                'dailyQuestsDate': profile.get('dailyQuestsDate', ''),
+                'weeklyQuests': profile.get('weeklyQuests', []),
+                'weeklyQuestsDate': profile.get('weeklyQuestsDate', ''),
+                'upgradeExpiry': profile.get('upgradeExpiry', {}),
+                'nicknameChanges': profile.get('nicknameChanges', 0),
             })
 
             cur.execute(

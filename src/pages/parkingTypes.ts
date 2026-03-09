@@ -166,6 +166,17 @@ export function isYandexGamesEnv(): boolean {
   return !!(_ysdk ?? window._yaSDK);
 }
 
+export async function getYaCatalog(): Promise<YaProduct[]> {
+  try {
+    const sdk = _ysdk ?? window._yaSDK;
+    if (!sdk) return [];
+    const payments = await sdk.getPayments({ signed: false });
+    return await payments.catalog();
+  } catch {
+    return [];
+  }
+}
+
 export async function buyGems(productId: string): Promise<{ ok: boolean; error?: string }> {
   try {
     const sdk = _ysdk ?? window._yaSDK;
@@ -706,19 +717,25 @@ export function profileToSavePayload(p: PlayerData) {
     coins: p.coins,
     gems: p.gems,
     xp: p.xp,
+    level: p.level ?? 1,
     wins: p.wins,
     gamesPlayed: p.gamesPlayed,
     bestPosition: p.bestPosition,
     selectedCar: p.selectedCar,
     ownedCars: p.cars.filter(c => c.owned).map(c => c.id),
     upgrades: p.upgrades,
+    upgradeExpiry: p.upgradeExpiry ?? {},
     cars: p.cars,
     extraLives: p.extraLives ?? 0,
     coinBoostSessions: p.coinBoostSessions ?? 0,
     xpBoostGames: p.xpBoostGames ?? 0,
     loginStreak: p.loginStreak ?? 0,
     lastLoginDate: p.lastLoginDate ?? '',
-    level: p.level ?? 1,
+    dailyQuests: p.dailyQuests ?? [],
+    dailyQuestsDate: p.dailyQuestsDate ?? '',
+    weeklyQuests: p.weeklyQuests ?? [],
+    weeklyQuestsDate: p.weeklyQuestsDate ?? '',
+    nicknameChanges: p.nicknameChanges ?? 0,
   };
 }
 

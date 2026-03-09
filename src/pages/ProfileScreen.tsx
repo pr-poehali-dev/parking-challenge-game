@@ -84,7 +84,7 @@ export function ProfileScreen({ player, setScreen, setPlayer, notify }: ProfileS
     <div className="min-h-screen flex flex-col px-4 py-6 gap-5 max-w-lg mx-auto w-full overflow-x-hidden">
       <div className="flex items-center gap-2 min-w-0">
         <button className="btn-game bg-white/10 text-white border-b-white/20 py-2 px-3 shrink-0" onClick={() => setScreen('menu')}>←</button>
-        <h2 className="font-russo text-xl text-yellow-400 truncate">👤 Профиль</h2>
+        <h2 className="font-russo text-xl text-yellow-400 truncate">{t('profile_title')}</h2>
         <button
           className="ml-auto btn-game bg-yellow-400/10 text-yellow-300 border-yellow-400/30 py-2 px-3 text-sm relative shrink-0 whitespace-nowrap"
           onClick={() => setScreen('achievements')}
@@ -99,7 +99,7 @@ export function ProfileScreen({ player, setScreen, setPlayer, notify }: ProfileS
         xpInLevel={xpInLevel}
         xpNeeded={xpNeeded}
         onEmojiChange={em => setPlayer(prev => ({ ...prev, emoji: em }))}
-        onNameChange={name => { setPlayer(prev => ({ ...prev, name, nicknameChanges: (prev.nicknameChanges ?? 0) + 1 })); notify('✅ Имя изменено!'); }}
+        onNameChange={name => { setPlayer(prev => ({ ...prev, name, nicknameChanges: (prev.nicknameChanges ?? 0) + 1 })); notify(t('notify_name_changed')); }}
       />
 
       <div className="grid grid-cols-2 gap-3">

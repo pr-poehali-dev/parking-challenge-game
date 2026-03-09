@@ -5,7 +5,7 @@ import {
   apiAuth, getYaPlayer, initYandexGames, notifyGameReady, getOrCreateAnonId,
   DAILY_STREAK_REWARDS, makeDailyQuests, todayDateStr, restoreGemPurchases,
 } from '@/pages/parkingTypes';
-import { initI18n } from '@/i18n';
+import { initI18n, t } from '@/i18n';
 import { getSavedNick } from '@/components/NicknameSetup';
 
 async function prefetchFriendCode(localPlayerId: string) {
@@ -81,7 +81,8 @@ export function usePlayerAuth(notify: (msg: string) => void) {
           } catch { /* ignore */ }
 
           if (serverProfile) {
-            base = saved ? { ...serverProfile, cars: saved.cars ?? serverProfile.cars } : serverProfile;
+            // Server is authoritative — take server data, only fall back to local cars if server has none
+            base = { ...serverProfile, cars: serverProfile.cars?.length ? serverProfile.cars : (saved?.cars ?? serverProfile.cars) };
           } else {
             base = (saved && saved.name) ? saved : {
               ...DEFAULT_PLAYER,
@@ -95,8 +96,15 @@ export function usePlayerAuth(notify: (msg: string) => void) {
           try {
             const anonId = getOrCreateAnonId();
             const resp = await apiAuth('load_anon', { playerId: anonId });
-            if (resp.profile && resp.profile.xp >= saved.xp) {
-              base = { ...saved, ...resp.profile, password: '' } as PlayerData;
+            if (resp.profile) {
+              // Take server data if it is more progressed (higher combined xp + coins)
+              const serverScore = (resp.profile.xp ?? 0) + (resp.profile.coins ?? 0);
+              const localScore = (saved.xp ?? 0) + (saved.coins ?? 0);
+              if (serverScore >= localScore) {
+                base = { ...DEFAULT_PLAYER, ...saved, ...resp.profile, password: '' } as PlayerData;
+              } else {
+                base = saved;
+              }
             } else {
               base = saved;
             }
@@ -113,7 +121,7 @@ export function usePlayerAuth(notify: (msg: string) => void) {
         const restored = await restoreGemPurchases();
         if (restored.restored > 0) {
           base = { ...base, gems: base.gems + restored.restored };
-          notify(`✅ Восстановлено ${restored.restored} 💎 из незавершённых покупок`);
+          notify(`${t('notify_restored')} ${restored.restored} 💎 ${t('notify_restored_gems')}`);
         }
 
         const withBonus = checkDailyBonus(base);

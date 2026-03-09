@@ -144,7 +144,7 @@ export function MenuScreen({ player, setScreen, onPlay, onQuestClaim, onWeeklyQu
             {questTab === 'weekly' && (
               <div className="flex flex-col gap-1.5">
                 {weeklyQuests.length === 0 && (
-                  <div className="text-white/30 text-xs font-nunito text-center py-2">Начни играть — задания появятся!</div>
+                  <div className="text-white/30 text-xs font-nunito text-center py-2">{t('weekly_quests_start')}</div>
                 )}
                 {weeklyQuests.map(q => {
                   const pct = Math.min(100, (q.progress / q.goal) * 100);
@@ -325,7 +325,7 @@ export function GameScreen({
                   const newCars = prev.cars.map((c, i) => i === prev.selectedCar ? { ...c, hp: Math.min(c.maxHp, c.hp + repairInfo.heal) } : c);
                   return { ...prev, coins: prev.coins - repairInfo.cost, cars: newCars };
                 });
-                notify(`🔧 +${repairInfo.heal} HP`);
+                notify(`${t('notify_repair_hp')} +${repairInfo.heal}`);
               } else {
                 notify(t('low_coins'));
               }

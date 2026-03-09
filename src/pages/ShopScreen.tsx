@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { PlayerData, Screen, buyGems, isYandexGamesEnv, restoreGemPurchases } from './parkingTypes';
+import { PlayerData, Screen, buyGems, isYandexGamesEnv, restoreGemPurchases, getYaCatalog } from './parkingTypes';
 import { CoinIcon, GemIcon } from '@/components/ui/CoinIcon';
 import { t } from '@/i18n';
 
@@ -55,6 +55,16 @@ export function ShopScreen({ player, setScreen, setPlayer, notify }: ShopScreenP
   const [buyingId, setBuyingId] = useState<string | null>(null);
   const [restoring, setRestoring] = useState(false);
   const inYa = isYandexGamesEnv();
+  const [sdkPrices, setSdkPrices] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    if (!inYa) return;
+    getYaCatalog().then(catalog => {
+      const prices: Record<string, string> = {};
+      catalog.forEach(p => { prices[p.id] = p.price; });
+      setSdkPrices(prices);
+    }).catch(() => {});
+  }, [inYa]);
 
   const handleRestore = async () => {
     if (!inYa) { notify(t('restore_ya_only')); return; }
@@ -64,9 +74,9 @@ export function ShopScreen({ player, setScreen, setPlayer, notify }: ShopScreenP
       const result = await restoreGemPurchases();
       if (result.restored > 0) {
         setPlayer(prev => ({ ...prev, gems: prev.gems + result.restored }));
-        notify(`✅ Восстановлено ${result.restored} 💎!`);
+        notify(`${t('notify_restored')} ${result.restored} 💎!`);
       } else {
-        notify('ℹ️ Незавершённых покупок не найдено');
+        notify(t('notify_no_pending'));
       }
     } finally {
       setRestoring(false);
@@ -75,10 +85,10 @@ export function ShopScreen({ player, setScreen, setPlayer, notify }: ShopScreenP
 
   // productId должен совпадать с ID продукта в кабинете разработчика Яндекс Игр
   const gemPacks: { id: string; gems: number; price: string; bonus?: string; popular?: boolean }[] = [
-    { id: 'gems_100', gems: 100, price: '79₽' },
-    { id: 'gems_300', gems: 300, price: '199₽', bonus: '+50 бонус', popular: true },
-    { id: 'gems_700', gems: 700, price: '399₽', bonus: '+150 бонус' },
-    { id: 'gems_1500', gems: 1500, price: '799₽', bonus: '+500 бонус' },
+    { id: 'gems_100',  gems: 100,  price: sdkPrices['gems_100']  ?? '79₽' },
+    { id: 'gems_300',  gems: 300,  price: sdkPrices['gems_300']  ?? '199₽', bonus: `+50 ${t('bonus_label')}`,  popular: true },
+    { id: 'gems_700',  gems: 700,  price: sdkPrices['gems_700']  ?? '399₽', bonus: `+150 ${t('bonus_label')}` },
+    { id: 'gems_1500', gems: 1500, price: sdkPrices['gems_1500'] ?? '799₽', bonus: `+500 ${t('bonus_label')}` },
   ];
 
   const handleBuyGems = async (pack: typeof gemPacks[0]) => {
@@ -89,7 +99,7 @@ export function ShopScreen({ player, setScreen, setPlayer, notify }: ShopScreenP
       const result = await buyGems(pack.id);
       if (result.ok) {
         setPlayer(prev => ({ ...prev, gems: prev.gems + pack.gems }));
-        notify(`✅ Получено ${pack.gems} 💎!`);
+        notify(`${t('notify_gems_recv')} ${pack.gems} 💎!`);
       } else if (result.error !== 'cancelled') {
         notify(t('payment_error'));
       }
@@ -124,7 +134,7 @@ export function ShopScreen({ player, setScreen, setPlayer, notify }: ShopScreenP
       upgrades: { ...prev.upgrades, [upg.key]: true },
       upgradeExpiry: { ...(prev.upgradeExpiry ?? {}), [upg.key]: expiresAt },
     }));
-    notify(`✅ ${upg.name} куплено на 24 часа!`);
+    notify(`✅ ${upg.name} ${t('notify_upg_bought')}`);
   };
 
   const consumables: { id: string; name: string; desc: string; icon: string; price: number; action: () => void }[] = [
@@ -142,7 +152,7 @@ export function ShopScreen({ player, setScreen, setPlayer, notify }: ShopScreenP
           const cars = prev.cars.map((c, i) => i === prev.selectedCar ? { ...c, hp: Math.min(c.maxHp, c.hp + 30) } : c);
           return { ...prev, coins: prev.coins - 150, cars };
         });
-        notify('🔧 +30 HP восстановлено!');
+        notify(t('notify_repair_s'));
       },
     },
     {
@@ -159,7 +169,7 @@ export function ShopScreen({ player, setScreen, setPlayer, notify }: ShopScreenP
           const cars = prev.cars.map((c, i) => i === prev.selectedCar ? { ...c, hp: c.maxHp } : c);
           return { ...prev, coins: prev.coins - 500, cars };
         });
-        notify('🛠️ HP полностью восстановлено!');
+        notify(t('notify_repair_xl'));
       },
     },
     {
@@ -171,7 +181,7 @@ export function ShopScreen({ player, setScreen, setPlayer, notify }: ShopScreenP
       action: () => {
         const current = player.coinBoostSessions ?? 0;
         setPlayer(prev => ({ ...prev, coins: prev.coins - 800, coinBoostSessions: (prev.coinBoostSessions ?? 0) + 3 }));
-        notify(`💰 Буст x2 активирован! (${current + 3} игр)`);
+        notify(`${t('notify_coinboost')} (${current + 3} ${t('games_suffix')})`);
       },
     },
     {
@@ -183,7 +193,7 @@ export function ShopScreen({ player, setScreen, setPlayer, notify }: ShopScreenP
       action: () => {
         if ((player.extraLives ?? 0) >= 3) { notify(t('max_lives')); return; }
         setPlayer(prev => ({ ...prev, coins: prev.coins - 1200, extraLives: (prev.extraLives ?? 0) + 1 }));
-        notify('❤️ Вторая жизнь добавлена в запас!');
+        notify(t('notify_extralife'));
       },
     },
     {
@@ -194,7 +204,7 @@ export function ShopScreen({ player, setScreen, setPlayer, notify }: ShopScreenP
       price: 600,
       action: () => {
         setPlayer(prev => ({ ...prev, coins: prev.coins - 600, xpBoostGames: (prev.xpBoostGames ?? 0) + 5 }));
-        notify('⭐ Буст опыта x2 на 5 игр!');
+        notify(t('notify_xpboost'));
       },
     },
   ];
@@ -307,7 +317,7 @@ export function ShopScreen({ player, setScreen, setPlayer, notify }: ShopScreenP
               onClick={() => {
                 if (player.gems >= pack.gems) {
                   setPlayer(prev => ({ ...prev, gems: prev.gems - pack.gems, coins: prev.coins + pack.coins }));
-                  notify(`✅ Получено ${pack.coins.toLocaleString()} монет!`);
+                  notify(`${t('notify_gems_recv')} ${pack.coins.toLocaleString()} ${t('coins_received')}!`);
                 } else {
                   notify(t('not_enough_gems'));
                 }

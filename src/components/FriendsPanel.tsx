@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { FRIENDS_URL, getOrCreateAnonId } from '@/pages/parkingTypes';
+import { t } from '@/i18n';
 
 const FRIEND_BONUS_COINS = 0.1;
 const FRIEND_BONUS_XP = 0.15;
@@ -81,10 +82,10 @@ export default function FriendsPanel({ playerName, playerEmoji, localPlayerId, n
 
   const handleAdd = async () => {
     const code = inputCode.trim().toUpperCase();
-    if (code.length < 6) { notify('❌ Введи код друга (минимум 6 символов)'); return; }
-    if (code === myCode) { notify('❌ Нельзя добавить себя'); return; }
-    if (friends.some(f => f.code.toUpperCase() === code)) { notify('⚠️ Этот игрок уже в друзьях'); return; }
-    if (friends.length >= 20) { notify('❌ Максимум 20 друзей'); return; }
+    if (code.length < 6) { notify(t('friends_err_short')); return; }
+    if (code === myCode) { notify(t('friends_err_self')); return; }
+    if (friends.some(f => f.code.toUpperCase() === code)) { notify(t('friends_err_already')); return; }
+    if (friends.length >= 20) { notify(t('friends_err_max')); return; }
 
     setLoading(true);
     try {
@@ -95,10 +96,10 @@ export default function FriendsPanel({ playerName, playerEmoji, localPlayerId, n
         const f = data.friend;
         setFriends(prev => [...prev, { code: f.code, name: f.name, emoji: f.emoji }]);
         setInputCode('');
-        notify(`✅ ${f.name} добавлен в друзья! Играйте вместе — бонус +10% монет`);
+        notify(`✅ ${f.name} ${t('friends_added')}`);
       }
     } catch {
-      notify('❌ Ошибка соединения');
+      notify(t('friends_err_conn'));
     }
     setLoading(false);
   };
@@ -131,7 +132,7 @@ export default function FriendsPanel({ playerName, playerEmoji, localPlayerId, n
     <div className="flex flex-col gap-4">
       {/* Мой код */}
       <div className="card-game-solid p-4 flex flex-col gap-3">
-        <div className="font-russo text-white/50 text-xs uppercase tracking-wider">👥 Мой код</div>
+        <div className="font-russo text-white/50 text-xs uppercase tracking-wider">{t('friends_my_code')}</div>
         <div className="flex items-center gap-2 bg-white/5 rounded-xl px-3 py-2.5">
           <span className="text-xl">{playerEmoji}</span>
           <div className="flex-1">
@@ -152,11 +153,11 @@ export default function FriendsPanel({ playerName, playerEmoji, localPlayerId, n
 
       {/* Добавить друга */}
       <div className="card-game p-4 flex flex-col gap-3">
-        <div className="font-russo text-white/50 text-xs uppercase tracking-wider">➕ Добавить друга</div>
+        <div className="font-russo text-white/50 text-xs uppercase tracking-wider">➕ {t('friends_add_title')}</div>
         <div className="flex flex-col gap-2">
           <input
             className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 font-russo text-white text-sm outline-none focus:border-yellow-500/50 placeholder:text-white/20 uppercase tracking-wider"
-            placeholder="КОД ДРУГА"
+            placeholder={t('friends_code_hint')}
             value={inputCode}
             maxLength={16}
             onChange={e => setInputCode(e.target.value.toUpperCase())}
@@ -167,7 +168,7 @@ export default function FriendsPanel({ playerName, playerEmoji, localPlayerId, n
             onClick={handleAdd}
             disabled={loading}
           >
-            {loading ? '...' : '➕ Добавить'}
+            {loading ? '...' : `➕ ${t('friends_add')}`}
           </button>
         </div>
         <p className="text-white/20 text-xs font-nunito">
@@ -192,7 +193,7 @@ export default function FriendsPanel({ playerName, playerEmoji, localPlayerId, n
               </div>
               {f.wins !== undefined && (
                 <div className="text-right shrink-0">
-                  <div className="font-russo text-yellow-400 text-xs">{f.wins} побед</div>
+                  <div className="font-russo text-yellow-400 text-xs">{f.wins} {t('friends_wins')}</div>
                   <div className="font-nunito text-white/20 text-xs">{(f.xp ?? 0).toLocaleString()} XP</div>
                 </div>
               )}
@@ -207,7 +208,7 @@ export default function FriendsPanel({ playerName, playerEmoji, localPlayerId, n
         </div>
       ) : (
         <div className="text-center text-white/20 font-nunito text-sm py-4">
-          Пока нет друзей — поделись своим кодом!
+          {t('friends_empty')}
         </div>
       )}
     </div>

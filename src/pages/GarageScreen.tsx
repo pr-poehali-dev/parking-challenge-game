@@ -27,7 +27,7 @@ export function GarageScreen({ player, setScreen, setPlayer, notify }: GarageScr
         <div className="text-6xl animate-float">{sel.emoji}</div>
         <div className="text-center">
           <div className={`font-russo text-xl ${RARITIES[sel.rarity].color}`}>{sel.name}</div>
-          <div className={`text-xs font-nunito font-bold uppercase tracking-wider mt-1 ${RARITIES[sel.rarity].color}`}>{RARITIES[sel.rarity].label}</div>
+          <div className={`text-xs font-nunito font-bold uppercase tracking-wider mt-1 ${RARITIES[sel.rarity].color}`}>{t(`rarity_${sel.rarity}`)}</div>
         </div>
 
         {/* Прочность */}
@@ -50,7 +50,7 @@ export function GarageScreen({ player, setScreen, setPlayer, notify }: GarageScr
                     const newMaxHp = c.baseMaxHp + newLevel * UPGRADE_BONUS.hp;
                     return { ...c, hpLevel: newLevel, maxHp: newMaxHp, hp: Math.min(c.hp, newMaxHp) };
                   }) }));
-                  notify(`✅ Прочность улучшена! +${UPGRADE_BONUS.hp} HP`);
+                  notify(`${t('notify_hp_up')} +${UPGRADE_BONUS.hp} HP`);
                 } else notify(t('not_enough_coins'));
               }}>
               <span className="font-russo text-green-400 text-xs">⬆ +{UPGRADE_BONUS.hp} HP</span>
@@ -81,7 +81,7 @@ export function GarageScreen({ player, setScreen, setPlayer, notify }: GarageScr
                     const newArmor = parseFloat((c.baseArmor + newLevel * UPGRADE_BONUS.armor).toFixed(1));
                     return { ...c, armorLevel: newLevel, armor: newArmor };
                   }) }));
-                  notify(`✅ Броня улучшена! +${UPGRADE_BONUS.armor}`);
+                  notify(`${t('notify_armor_up')} +${UPGRADE_BONUS.armor}`);
                 } else notify(t('not_enough_coins'));
               }}>
               <span className="font-russo text-blue-400 text-xs">⬆ +{UPGRADE_BONUS.armor} брони</span>
@@ -112,7 +112,7 @@ export function GarageScreen({ player, setScreen, setPlayer, notify }: GarageScr
                     const newMaxSpeed = parseFloat((c.baseMaxSpeed + newLevel * UPGRADE_BONUS.speed).toFixed(2));
                     return { ...c, speedLevel: newLevel, maxSpeed: newMaxSpeed, speed: newMaxSpeed };
                   }) }));
-                  notify(`✅ Скорость улучшена! +${UPGRADE_BONUS.speed}`);
+                  notify(`${t('notify_speed_up')} +${UPGRADE_BONUS.speed}`);
                 } else notify(t('not_enough_coins'));
               }}>
               <span className="font-russo text-orange-400 text-xs">⬆ +{UPGRADE_BONUS.speed} скорости</span>
@@ -150,13 +150,13 @@ export function GarageScreen({ player, setScreen, setPlayer, notify }: GarageScr
                 if (car.owned) { setPlayer(prev => ({ ...prev, selectedCar: idx })); }
                 else if (player.coins >= car.price) {
                   setPlayer(prev => ({ ...prev, coins: prev.coins - car.price, cars: prev.cars.map((c, i) => i === idx ? { ...c, owned: true } : c), selectedCar: idx }));
-                  notify(`🎉 Куплен ${car.name}!`);
+                  notify(`${t('notify_car_bought')} ${car.name}!`);
                 } else notify(t('not_enough_coins'));
               }}
               className={`${r.bg} border-2 ${isSel ? r.border : 'border-white/10'} rounded-2xl p-3 flex flex-col items-center gap-1 transition-all hover:scale-105 ${isSel ? 'scale-105' : ''}`}>
               <div className="text-3xl">{car.emoji}</div>
               <div className={`font-russo text-xs text-center ${r.color}`}>{car.name}</div>
-              <div className={`text-[10px] font-nunito uppercase ${r.color} opacity-70`}>{r.label}</div>
+              <div className={`text-[10px] font-nunito uppercase ${r.color} opacity-70`}>{t(`rarity_${car.rarity}`)}</div>
               {!car.owned && <div className="text-yellow-400 text-xs font-russo mt-1 flex items-center gap-0.5 justify-center">{car.price} <CoinIcon size={12} /></div>}
               {car.owned && isSel && <div className="text-green-400 text-xs font-bold">✓</div>}
             </button>
