@@ -37,19 +37,28 @@
       "bodyMatcher": "partial"
     },
     {
-      "name": "Save anonymous player",
+      "name": "Save anonymous player with cars",
       "method": "POST",
       "path": "/",
-      "body": {"action": "save_anon", "playerId": "anon_test_777", "profile": {"name": "АнонИгрок", "emoji": "🚗", "coins": 300, "gems": 0, "xp": 250, "wins": 2, "gamesPlayed": 5, "bestPosition": 3, "selectedCar": 0, "ownedCars": [0], "upgrades": {}}},
+      "body": {"action": "save_anon", "playerId": "anon_test_777", "profile": {"name": "АнонИгрок", "emoji": "🚗", "coins": 300, "gems": 0, "xp": 250, "wins": 2, "gamesPlayed": 5, "bestPosition": 3, "selectedCar": 0, "ownedCars": [0], "upgrades": {}, "cars": [], "extraLives": 0, "coinBoostSessions": 0, "xpBoostGames": 0, "loginStreak": 1, "lastLoginDate": "2026-03-09", "level": 2}},
       "expectedStatus": 200,
       "expectedBody": {"success": true},
       "bodyMatcher": "partial"
     },
     {
-      "name": "Save Yandex player",
+      "name": "Load anonymous player",
       "method": "POST",
       "path": "/",
-      "body": {"action": "save_ya", "yaId": "ya_test999888", "profile": {"name": "ЯИгрок", "emoji": "🚗", "coins": 500, "gems": 0, "xp": 100, "wins": 1, "gamesPlayed": 3, "bestPosition": 2, "selectedCar": 0, "ownedCars": [0], "upgrades": {}}},
+      "body": {"action": "load_anon", "playerId": "anon_test_777"},
+      "expectedStatus": 200,
+      "expectedBody": {"profile": {"name": "АнонИгрок"}},
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Save Yandex player with cars",
+      "method": "POST",
+      "path": "/",
+      "body": {"action": "save_ya", "yaId": "ya_test999888", "profile": {"name": "ЯИгрок", "emoji": "🚗", "coins": 500, "gems": 0, "xp": 100, "wins": 1, "gamesPlayed": 3, "bestPosition": 2, "selectedCar": 0, "ownedCars": [0], "upgrades": {}, "cars": [], "extraLives": 1, "coinBoostSessions": 2, "xpBoostGames": 0, "loginStreak": 3, "lastLoginDate": "2026-03-09", "level": 1}},
       "expectedStatus": 200,
       "expectedBody": {"success": true},
       "bodyMatcher": "partial"

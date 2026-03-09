@@ -31,6 +31,10 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { err
   }
 }
 
+document.addEventListener('contextmenu', e => e.preventDefault());
+document.addEventListener('selectstart', e => e.preventDefault());
+document.addEventListener('dragstart', e => e.preventDefault());
+
 const rootEl = document.getElementById("root") ?? document.body;
 createRoot(rootEl).render(
   <ErrorBoundary>

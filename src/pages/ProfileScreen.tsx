@@ -2,6 +2,8 @@ import React from 'react';
 import { PlayerData, Screen, xpForLevel, getGemPurchaseLog, GemPurchaseEntry } from './parkingTypes';
 import { ProfileCard } from './LoginScreen';
 import FriendsPanel from '@/components/FriendsPanel';
+import { t } from '@/i18n';
+import { CoinIcon, GemIcon } from '@/components/ui/CoinIcon';
 
 interface ProfileScreenProps {
   player: PlayerData;
@@ -57,10 +59,10 @@ export const ALL_ACHIEVEMENTS: AchDef[] = [
 ];
 
 const GEM_PACK_LABELS: Record<string, string> = {
-  gems_100: '100 💎',
-  gems_300: '350 💎',
-  gems_700: '850 💎',
-  gems_1500: '2000 💎',
+  gems_100: '100',
+  gems_300: '350',
+  gems_700: '850',
+  gems_1500: '2000',
 };
 
 function formatDate(iso: string): string {
@@ -101,14 +103,14 @@ export function ProfileScreen({ player, setScreen, setPlayer, notify }: ProfileS
       />
 
       <div className="grid grid-cols-2 gap-3">
-        {[
-          { icon: '🎮', val: player.gamesPlayed, label: 'Игр сыграно' },
-          { icon: '🏆', val: player.wins, label: 'Побед' },
-          { icon: '🥇', val: player.bestPosition === 99 ? '—' : `#${player.bestPosition}`, label: 'Лучшее место' },
-          { icon: '🪙', val: player.coins.toLocaleString(), label: 'Монет' },
-        ].map(s => (
+        {([
+          { icon: <span className="text-2xl">🎮</span>, val: player.gamesPlayed, label: t('profile_games') },
+          { icon: <span className="text-2xl">🏆</span>, val: player.wins, label: t('profile_wins') },
+          { icon: <span className="text-2xl">🥇</span>, val: player.bestPosition === 99 ? '—' : `#${player.bestPosition}`, label: t('profile_best') },
+          { icon: <CoinIcon size={28} />, val: player.coins.toLocaleString(), label: t('profile_coins') },
+        ] as { icon: React.ReactNode; val: React.ReactNode; label: string }[]).map(s => (
           <div key={s.label} className="card-game p-4 flex flex-col gap-1">
-            <div className="text-2xl">{s.icon}</div>
+            <div className="flex items-center" style={{ height: '2rem' }}>{s.icon}</div>
             <div className="font-russo text-white text-lg">{s.val}</div>
             <div className="text-white/30 text-xs font-nunito">{s.label}</div>
           </div>
@@ -121,7 +123,7 @@ export function ProfileScreen({ player, setScreen, setPlayer, notify }: ProfileS
       >
         <div className="text-3xl">🏅</div>
         <div className="flex-1 text-left">
-          <div className="font-russo text-white text-sm">Достижения</div>
+          <div className="font-russo text-white text-sm">{t('achievements_btn')}</div>
           <div className="font-nunito text-white/30 text-xs">{totalDone} из {ALL_ACHIEVEMENTS.length} выполнено</div>
         </div>
         {hasClaimable && <span className="text-xs font-nunito text-yellow-300 animate-pulse mr-1">● Награды!</span>}
@@ -130,14 +132,14 @@ export function ProfileScreen({ player, setScreen, setPlayer, notify }: ProfileS
 
       {gemLog.length > 0 && (
         <>
-          <h3 className="font-russo text-white/40 text-xs uppercase tracking-wider">💎 История покупок</h3>
+          <h3 className="font-russo text-white/40 text-xs uppercase tracking-wider">{t('gem_history')}</h3>
           <div className="flex flex-col gap-2">
             {gemLog.slice(0, 10).map((entry, i) => (
               <div key={i} className="card-game px-4 py-3 flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <span className="text-xl">💎</span>
+                  <GemIcon size={20} />
                   <div>
-                    <div className="font-russo text-white text-sm">{GEM_PACK_LABELS[entry.productId] ?? `${entry.gems} 💎`}</div>
+                    <div className="font-russo text-white text-sm flex items-center gap-1">{GEM_PACK_LABELS[entry.productId] ?? entry.gems} <GemIcon size={14} /></div>
                     <div className="text-white/30 text-xs font-nunito">{formatDate(entry.date)}</div>
                   </div>
                 </div>
@@ -148,7 +150,7 @@ export function ProfileScreen({ player, setScreen, setPlayer, notify }: ProfileS
         </>
       )}
 
-      <h3 className="font-russo text-white/40 text-xs uppercase tracking-wider">👥 Друзья</h3>
+      <h3 className="font-russo text-white/40 text-xs uppercase tracking-wider">{t('friends_section')}</h3>
       <FriendsPanel playerName={player.name} playerEmoji={player.emoji} notify={notify} />
     </div>
   );

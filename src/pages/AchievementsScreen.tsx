@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { PlayerData, Screen, xpForLevel, LEVEL_REWARDS } from './parkingTypes';
 import { ALL_ACHIEVEMENTS, AchDef } from './ProfileScreen';
+import { t } from '@/i18n';
+import { CoinIcon, GemIcon } from '@/components/ui/CoinIcon';
 
 interface AchievementsScreenProps {
   player: PlayerData;
@@ -19,6 +21,15 @@ function claimAch(id: string) {
 }
 
 const CATEGORY_ORDER = ['Победы', 'Игры', 'Скиллы', 'Богатство', 'Гараж', 'Уровни', 'Серия'];
+const CATEGORY_I18N: Record<string, string> = {
+  'Победы': 'cat_wins',
+  'Игры': 'cat_games',
+  'Скиллы': 'cat_skills',
+  'Богатство': 'cat_wealth',
+  'Гараж': 'cat_garage',
+  'Уровни': 'cat_levels',
+  'Серия': 'cat_streak',
+};
 
 export default function AchievementsScreen({ player, setScreen, setPlayer, notify }: AchievementsScreenProps) {
   const [tab, setTab] = useState<'achievements' | 'levels'>('achievements');
@@ -55,9 +66,9 @@ export default function AchievementsScreen({ player, setScreen, setPlayer, notif
     <div className="min-h-screen flex flex-col px-4 py-6 gap-4 max-w-lg mx-auto">
       <div className="flex items-center gap-3">
         <button className="btn-game bg-white/10 text-white border-b-white/20 py-2 px-4" onClick={() => setScreen('profile')}>←</button>
-        <h2 className="font-russo text-2xl text-yellow-400">🏅 Достижения</h2>
+        <h2 className="font-russo text-2xl text-yellow-400">{t('ach_title')}</h2>
         <span className="ml-auto font-russo text-xs text-yellow-400/60">{totalDone}/{ALL_ACHIEVEMENTS.length}</span>
-        {hasClaimable && <span className="text-xs font-nunito text-yellow-300 animate-pulse">● Есть награды!</span>}
+        {hasClaimable && <span className="text-xs font-nunito text-yellow-300 animate-pulse">{t('ach_rewards')}</span>}
       </div>
 
       {/* XP progress */}
@@ -81,13 +92,13 @@ export default function AchievementsScreen({ player, setScreen, setPlayer, notif
           onClick={() => setTab('achievements')}
           className={`flex-1 py-2 rounded-xl font-russo text-sm transition-all ${tab === 'achievements' ? 'bg-yellow-400/20 text-yellow-300 border border-yellow-400/30' : 'bg-white/5 text-white/40 hover:text-white/60'}`}
         >
-          🏅 Достижения
+          {t('ach_tab')}
         </button>
         <button
           onClick={() => setTab('levels')}
           className={`flex-1 py-2 rounded-xl font-russo text-sm transition-all ${tab === 'levels' ? 'bg-purple-400/20 text-purple-300 border border-purple-400/30' : 'bg-white/5 text-white/40 hover:text-white/60'}`}
         >
-          📈 Награды за уровни
+          {t('level_rewards')}
         </button>
       </div>
 
@@ -104,7 +115,7 @@ export default function AchievementsScreen({ player, setScreen, setPlayer, notif
                   onClick={() => setAchCat(g.cat)}
                   className={`px-2.5 py-1 rounded-lg text-xs font-russo transition-all relative ${achCat === g.cat ? 'bg-yellow-400/20 text-yellow-300 border border-yellow-400/30' : 'bg-white/5 text-white/30 hover:text-white/50'}`}
                 >
-                  {g.cat} {doneCnt}/{g.items.length}
+                  {t(CATEGORY_I18N[g.cat] ?? g.cat)} {doneCnt}/{g.items.length}
                   {claimCnt > 0 && <span className="absolute -top-1 -right-1 w-2 h-2 bg-yellow-400 rounded-full" />}
                 </button>
               );
@@ -127,8 +138,8 @@ export default function AchievementsScreen({ player, setScreen, setPlayer, notif
                       {ach.title}
                     </div>
                     <div className="font-nunito text-white/40 text-xs">{ach.desc}</div>
-                    <div className="font-nunito text-white/30 text-xs mt-0.5">
-                      +{ach.reward.coins}🪙{ach.reward.gems ? ` +${ach.reward.gems}💎` : ''}
+                    <div className="font-nunito text-white/30 text-xs mt-0.5 flex items-center gap-0.5">
+                      +{ach.reward.coins}<CoinIcon size={11} />{ach.reward.gems ? <>{' '}+{ach.reward.gems}<GemIcon size={11} /></> : null}
                     </div>
                   </div>
                   {claimed ? (
@@ -138,7 +149,7 @@ export default function AchievementsScreen({ player, setScreen, setPlayer, notif
                       className="shrink-0 bg-yellow-400 text-gray-900 font-russo text-xs px-3 py-1.5 rounded-xl hover:bg-yellow-300 transition-all"
                       onClick={() => handleClaimAch(ach)}
                     >
-                      Забрать!
+                      {t('claim')}
                     </button>
                   ) : (
                     <div className="text-white/20 text-lg shrink-0">🔒</div>
@@ -152,7 +163,7 @@ export default function AchievementsScreen({ player, setScreen, setPlayer, notif
 
       {tab === 'levels' && (
         <div className="flex flex-col gap-2">
-          <p className="font-nunito text-white/30 text-xs text-center">Награды начисляются автоматически при достижении уровня</p>
+          <p className="font-nunito text-white/30 text-xs text-center">{t('level_rewards_note')}</p>
           {LEVEL_REWARDS.map(r => {
             const reached = player.level >= r.level;
             return (
@@ -165,8 +176,8 @@ export default function AchievementsScreen({ player, setScreen, setPlayer, notif
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-nunito text-yellow-400 text-sm">+{r.coins.toLocaleString()} 🪙</span>
-                    {r.gems && <span className="font-nunito text-blue-300 text-sm">+{r.gems} 💎</span>}
+                    <span className="font-nunito text-yellow-400 text-sm flex items-center gap-0.5">+{r.coins.toLocaleString()} <CoinIcon size={13} /></span>
+                    {r.gems && <span className="font-nunito text-blue-300 text-sm flex items-center gap-0.5">+{r.gems} <GemIcon size={13} /></span>}
                   </div>
                   {r.bonus && <div className="font-nunito text-white/50 text-xs mt-0.5">{r.bonus}</div>}
                   <div className="font-nunito text-white/20 text-xs mt-0.5">

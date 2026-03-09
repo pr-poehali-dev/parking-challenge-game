@@ -1,22 +1,25 @@
 import { useEffect, useState, useRef } from 'react';
 import type { RoomState } from '@/pages/parkingTypes';
 import { getMyFriendCode, getFriends } from '@/components/FriendsPanel';
+import { t } from '@/i18n';
+import { CoinIcon, GemIcon } from '@/components/ui/CoinIcon';
 
-const TIPS = [
-  { icon: '🏅', text: 'Заходи в Достижения — там могут быть незабранные награды!' },
-  { icon: '⚡', text: 'Нитро: зажми Space на клавиатуре или кнопку ⚡ на экране во время езды.' },
-  { icon: '🛒', text: 'Расходники в Магазине — буст монет x2 и XP x2 ускоряют прокачку.' },
-  { icon: '❤️', text: 'Вторая жизнь из Расходников спасёт, если тебя выбьют из раунда.' },
-  { icon: '🧲', text: 'Магнит притягивает машину к месту парковки — удобно в финальных раундах.' },
-  { icon: '🛡️', text: 'Силовое поле поглощает первый удар за раунд — покупай против таранщиков.' },
-  { icon: '🔧', text: 'Ремонтируй машину в Гараже: с низким HP скорость заметно падает.' },
-  { icon: '👥', text: 'Добавляй друзей — при совместной игре оба получают +20% монет и XP.' },
-  { icon: '📡', text: 'GPS-радар показывает стрелку к ближайшему свободному месту.' },
-  { icon: '🚀', text: 'Турбо-старт даёт двойную скорость на 2 секунды после сигнала — врывайся первым!' },
-  { icon: '🎯', text: 'Выполняй ежедневные задания — они обновляются каждый день.' },
-  { icon: '🪙', text: 'Прокачивай машины в Гараже: HP, броня и скорость открывают разные стили.' },
-  { icon: '💎', text: 'Кристаллы выгоднее тратить на апгрейды в Магазине, чем менять на монеты.' },
-  { icon: '🏆', text: 'Победа в турнире — самый быстрый способ заработать монеты и XP.' },
+type TipIcon = string | React.ReactElement;
+const TIPS: { icon: TipIcon; key: string }[] = [
+  { icon: '🏅', key: 'tip_achievements' },
+  { icon: '⚡', key: 'tip_nitro' },
+  { icon: '🛒', key: 'tip_consumables' },
+  { icon: '❤️', key: 'tip_extralife' },
+  { icon: '🧲', key: 'tip_magnet' },
+  { icon: '🛡️', key: 'tip_shield' },
+  { icon: '🔧', key: 'tip_repair' },
+  { icon: '👥', key: 'tip_add_friends' },
+  { icon: '📡', key: 'tip_gps' },
+  { icon: '🚀', key: 'tip_turbo' },
+  { icon: '🎯', key: 'tip_daily' },
+  { icon: <CoinIcon size={20} />, key: 'tip_upgrades' },
+  { icon: <GemIcon size={20} />, key: 'tip_gems' },
+  { icon: '🏆', key: 'tip_win' },
 ];
 
 interface LobbyScreenProps {
@@ -211,7 +214,7 @@ export default function LobbyScreen({ room, localPlayerId, onCancel }: LobbyScre
           <span className="text-xl shrink-0 mt-0.5">{TIPS[tipIdx].icon}</span>
           <div>
             <div className="text-white/30 text-[10px] font-russo uppercase tracking-widest mb-0.5">Совет</div>
-            <div className="text-white/70 font-nunito text-xs leading-relaxed">{TIPS[tipIdx].text}</div>
+            <div className="text-white/70 font-nunito text-xs leading-relaxed">{t(TIPS[tipIdx].key)}</div>
           </div>
         </div>
 

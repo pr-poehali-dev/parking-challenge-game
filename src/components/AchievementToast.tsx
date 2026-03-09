@@ -1,6 +1,8 @@
 import { useEffect, useState, useRef } from 'react';
 import { PlayerData } from '@/pages/parkingTypes';
 import { ALL_ACHIEVEMENTS } from '@/pages/ProfileScreen';
+import { t } from '@/i18n';
+import { CoinIcon, GemIcon } from '@/components/ui/CoinIcon';
 
 const SEEN_KEY = 'parking_ach_seen_v2';
 
@@ -20,7 +22,8 @@ interface ToastItem {
   id: string;
   emoji: string;
   title: string;
-  rewardStr: string;
+  rewardCoins: number;
+  rewardGems: number;
   key: number;
 }
 
@@ -39,7 +42,8 @@ export default function AchievementToast({ player }: Props) {
       id: a.id,
       emoji: a.emoji,
       title: a.title,
-      rewardStr: [a.reward.coins ? `+${a.reward.coins}🪙` : '', a.reward.gems ? `+${a.reward.gems}💎` : ''].filter(Boolean).join(' '),
+      rewardCoins: a.reward.coins ?? 0,
+      rewardGems: a.reward.gems ?? 0,
       key: ++keyRef.current,
     }));
     setQueue(prev => [...prev, ...toasts]);
@@ -66,9 +70,15 @@ export default function AchievementToast({ player }: Props) {
         style={{ boxShadow: '0 0 24px rgba(255,214,0,0.3)' }}>
         <div className="text-3xl">{visible.emoji}</div>
         <div>
-          <div className="text-yellow-300 font-russo text-xs uppercase tracking-wider">🏅 Достижение!</div>
+          <div className="text-yellow-300 font-russo text-xs uppercase tracking-wider">{t('ach_toast_title')}</div>
           <div className="text-white font-russo text-sm">{visible.title}</div>
-          {visible.rewardStr && <div className="text-yellow-400/80 text-xs font-nunito">{visible.rewardStr} — забери в профиле</div>}
+          {(visible.rewardCoins > 0 || visible.rewardGems > 0) && (
+            <div className="text-yellow-400/80 text-xs font-nunito flex items-center gap-1">
+              {visible.rewardCoins > 0 && <><span>+{visible.rewardCoins}</span><CoinIcon size={12} /></>}
+              {visible.rewardGems > 0 && <><span>+{visible.rewardGems}</span><GemIcon size={12} /></>}
+              <span>— {t('ach_toast_claim')}</span>
+            </div>
+          )}
         </div>
       </div>
     </div>

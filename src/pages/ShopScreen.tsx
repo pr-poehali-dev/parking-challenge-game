@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { PlayerData, Screen, buyGems, isYandexGamesEnv, restoreGemPurchases } from './parkingTypes';
+import { CoinIcon, GemIcon } from '@/components/ui/CoinIcon';
+import { t } from '@/i18n';
 
 interface ShopScreenProps {
   player: PlayerData;
@@ -55,7 +57,7 @@ export function ShopScreen({ player, setScreen, setPlayer, notify }: ShopScreenP
   const inYa = isYandexGamesEnv();
 
   const handleRestore = async () => {
-    if (!inYa) { notify('♻️ Восстановление доступно только в Яндекс Играх'); return; }
+    if (!inYa) { notify(t('restore_ya_only')); return; }
     if (restoring) return;
     setRestoring(true);
     try {
@@ -80,7 +82,7 @@ export function ShopScreen({ player, setScreen, setPlayer, notify }: ShopScreenP
   ];
 
   const handleBuyGems = async (pack: typeof gemPacks[0]) => {
-    if (!inYa) { notify('💎 Покупка доступна только в Яндекс Играх'); return; }
+    if (!inYa) { notify(t('buy_ya_only')); return; }
     if (buyingId) return;
     setBuyingId(pack.id);
     try {
@@ -89,7 +91,7 @@ export function ShopScreen({ player, setScreen, setPlayer, notify }: ShopScreenP
         setPlayer(prev => ({ ...prev, gems: prev.gems + pack.gems }));
         notify(`✅ Получено ${pack.gems} 💎!`);
       } else if (result.error !== 'cancelled') {
-        notify('❌ Ошибка оплаты. Попробуй позже');
+        notify(t('payment_error'));
       }
     } finally {
       setBuyingId(null);
@@ -104,17 +106,17 @@ export function ShopScreen({ player, setScreen, setPlayer, notify }: ShopScreenP
   ];
 
   const upgrades: { name: string; desc: string; price: number; icon: string; key: keyof typeof player.upgrades; tag?: string }[] = [
-    { name: 'Нитро-ускорение', desc: 'Зажми Space — рывок +40% скорости', price: 500, icon: '⚡', key: 'nitro' },
-    { name: 'GPS-радар', desc: 'Стрелка к ближайшему свободному месту', price: 600, icon: '📡', key: 'gps' },
-    { name: 'Усиленный бампер', desc: '-30% урона при столкновениях', price: 900, icon: '🛡️', key: 'bumper' },
-    { name: 'Авто-ремонт', desc: '+15 HP после каждого раунда', price: 1000, icon: '🔧', key: 'autoRepair' },
-    { name: 'Магнит парковки', desc: 'Притягивает к месту в радиусе 50px', price: 1200, icon: '🧲', key: 'magnet', tag: 'ХИТ' },
-    { name: 'Турбо-старт', desc: 'После сигнала мгновенный разгон x2 на 2 сек', price: 1200, icon: '🚀', key: 'turbo' },
-    { name: 'Силовое поле', desc: 'Первый удар за раунд — без урона', price: 1800, icon: '🔵', key: 'shield', tag: 'ТОП' },
+    { name: t('upg_nitro'),      desc: t('upg_nitro_desc'),      price: 500,  icon: '⚡', key: 'nitro' },
+    { name: t('upg_gps'),        desc: t('upg_gps_desc'),        price: 600,  icon: '📡', key: 'gps' },
+    { name: t('upg_bumper'),     desc: t('upg_bumper_desc'),     price: 900,  icon: '🛡️', key: 'bumper' },
+    { name: t('upg_autorepair'), desc: t('upg_autorepair_desc'), price: 1000, icon: '🔧', key: 'autoRepair' },
+    { name: t('upg_magnet'),     desc: t('upg_magnet_desc'),     price: 1200, icon: '🧲', key: 'magnet', tag: t('tag_hit') },
+    { name: t('upg_turbo'),      desc: t('upg_turbo_desc'),      price: 1200, icon: '🚀', key: 'turbo' },
+    { name: t('upg_shield'),     desc: t('upg_shield_desc'),     price: 1800, icon: '🔵', key: 'shield', tag: t('tag_top') },
   ];
 
   const handleBuyUpgrade = (upg: typeof upgrades[0]) => {
-    if (player.coins < upg.price) { notify('❌ Недостаточно монет!'); return; }
+    if (player.coins < upg.price) { notify(t('not_enough_coins')); return; }
     const expiresAt = Date.now() + UPGRADE_DURATION_MS;
     setPlayer(prev => ({
       ...prev,
@@ -128,14 +130,14 @@ export function ShopScreen({ player, setScreen, setPlayer, notify }: ShopScreenP
   const consumables: { id: string; name: string; desc: string; icon: string; price: number; action: () => void }[] = [
     {
       id: 'repair_small',
-      name: 'Ремкомплект S',
-      desc: 'Восстанавливает 30 HP текущей машине',
+      name: t('cons_repair_s'),
+      desc: t('cons_repair_s_desc'),
       icon: '🔧',
       price: 150,
       action: () => {
         const car = player.cars[player.selectedCar];
         if (!car) return;
-        if (car.hp >= car.maxHp) { notify('❌ Машина уже в полном порядке!'); return; }
+        if (car.hp >= car.maxHp) { notify(t('car_full_health')); return; }
         setPlayer(prev => {
           const cars = prev.cars.map((c, i) => i === prev.selectedCar ? { ...c, hp: Math.min(c.maxHp, c.hp + 30) } : c);
           return { ...prev, coins: prev.coins - 150, cars };
@@ -145,14 +147,14 @@ export function ShopScreen({ player, setScreen, setPlayer, notify }: ShopScreenP
     },
     {
       id: 'repair_full',
-      name: 'Ремкомплект XL',
-      desc: 'Полностью восстанавливает HP машины',
+      name: t('cons_repair_xl'),
+      desc: t('cons_repair_xl_desc'),
       icon: '🛠️',
       price: 500,
       action: () => {
         const car = player.cars[player.selectedCar];
         if (!car) return;
-        if (car.hp >= car.maxHp) { notify('❌ Машина уже в полном порядке!'); return; }
+        if (car.hp >= car.maxHp) { notify(t('car_full_health')); return; }
         setPlayer(prev => {
           const cars = prev.cars.map((c, i) => i === prev.selectedCar ? { ...c, hp: c.maxHp } : c);
           return { ...prev, coins: prev.coins - 500, cars };
@@ -162,8 +164,8 @@ export function ShopScreen({ player, setScreen, setPlayer, notify }: ShopScreenP
     },
     {
       id: 'coin_boost',
-      name: 'Монетный буст x2',
-      desc: 'Удваивает монеты с игр на 3 сеанса',
+      name: t('cons_coinboost'),
+      desc: t('cons_coinboost_desc'),
       icon: '💰',
       price: 800,
       action: () => {
@@ -174,20 +176,20 @@ export function ShopScreen({ player, setScreen, setPlayer, notify }: ShopScreenP
     },
     {
       id: 'extra_life',
-      name: 'Вторая жизнь',
-      desc: 'Продолжить игру после выбывания (1 раз)',
+      name: t('cons_extralife'),
+      desc: t('cons_extralife_desc'),
       icon: '❤️',
       price: 1200,
       action: () => {
-        if ((player.extraLives ?? 0) >= 3) { notify('❌ Максимум 3 жизни в запасе!'); return; }
+        if ((player.extraLives ?? 0) >= 3) { notify(t('max_lives')); return; }
         setPlayer(prev => ({ ...prev, coins: prev.coins - 1200, extraLives: (prev.extraLives ?? 0) + 1 }));
         notify('❤️ Вторая жизнь добавлена в запас!');
       },
     },
     {
       id: 'xp_boost',
-      name: 'Буст опыта x2',
-      desc: 'Двойной XP за следующие 5 игр',
+      name: t('cons_xpboost'),
+      desc: t('cons_xpboost_desc'),
       icon: '⭐',
       price: 600,
       action: () => {
@@ -197,23 +199,23 @@ export function ShopScreen({ player, setScreen, setPlayer, notify }: ShopScreenP
     },
   ];
 
-  const tabs: { id: ShopTab; label: string; emoji: string }[] = [
-    { id: 'upgrades', label: 'Улучшения', emoji: '⚡' },
-    { id: 'consumables', label: 'Расходники', emoji: '🛒' },
-    { id: 'coins', label: 'Монеты', emoji: '🪙' },
-    { id: 'gems', label: 'Кристаллы', emoji: '💎' },
+  const tabs: { id: ShopTab; label: string; icon: React.ReactNode }[] = [
+    { id: 'upgrades',    label: t('tab_upgrades'),    icon: '⚡' },
+    { id: 'consumables', label: t('tab_consumables'), icon: '🛒' },
+    { id: 'coins',       label: t('tab_coins'),       icon: <CoinIcon size={16} /> },
+    { id: 'gems',        label: t('tab_gems'),        icon: <GemIcon size={16} /> },
   ];
 
   return (
     <div className="min-h-screen flex flex-col px-4 py-6 gap-4 max-w-lg mx-auto">
       <div className="flex items-center gap-3">
         <button className="btn-game bg-white/10 text-white border-b-white/20 py-2 px-4" onClick={() => setScreen('menu')}>←</button>
-        <h2 className="font-russo text-2xl text-yellow-400">🛒 Магазин</h2>
+        <h2 className="font-russo text-2xl text-yellow-400">{t('shop_title')}</h2>
       </div>
 
       <div className="flex gap-3">
-        <div className="coin-badge flex-1 justify-center py-2 text-sm">🪙 {player.coins.toLocaleString()}</div>
-        <div className="gem-badge flex-1 justify-center py-2 text-sm">💎 {player.gems}</div>
+        <div className="coin-badge flex-1 justify-center py-2 text-sm"><CoinIcon size={14} /> {player.coins.toLocaleString()}</div>
+        <div className="gem-badge flex-1 justify-center py-2 text-sm"><GemIcon size={14} /> {player.gems}</div>
       </div>
 
       <div className="flex gap-1 bg-white/5 rounded-2xl p-1">
@@ -227,7 +229,7 @@ export function ShopScreen({ player, setScreen, setPlayer, notify }: ShopScreenP
                 : 'text-white/50 hover:text-white/80'
             }`}
           >
-            <span>{t.emoji}</span>
+            <span className="flex items-center">{t.icon}</span>
             <span className="hidden sm:inline">{t.label}</span>
           </button>
         ))}
@@ -235,7 +237,7 @@ export function ShopScreen({ player, setScreen, setPlayer, notify }: ShopScreenP
 
       {tab === 'upgrades' && (
         <div className="space-y-2">
-          <p className="text-white/30 text-xs font-nunito text-center">Действует 24 часа с момента покупки</p>
+          <p className="text-white/30 text-xs font-nunito text-center">{t('upgrade_duration')}</p>
           {upgrades.map((upg, i) => {
             const owned = player.upgrades[upg.key];
             const expiry = player.upgradeExpiry?.[upg.key];
@@ -264,7 +266,7 @@ export function ShopScreen({ player, setScreen, setPlayer, notify }: ShopScreenP
                     className="btn-orange text-sm py-2 px-3 shrink-0"
                     onClick={() => handleBuyUpgrade(upg)}
                   >
-                    {upg.price} 🪙
+                    {upg.price} <CoinIcon size={13} />
                   </button>
                 )}
               </div>
@@ -275,7 +277,7 @@ export function ShopScreen({ player, setScreen, setPlayer, notify }: ShopScreenP
 
       {tab === 'consumables' && (
         <div className="space-y-2">
-          <p className="text-white/30 text-xs font-nunito text-center">Разовые предметы — тратятся сразу при использовании</p>
+          <p className="text-white/30 text-xs font-nunito text-center">{t('consumables_note')}</p>
           {consumables.map((item) => {
             const canAfford = player.coins >= item.price;
             return (
@@ -287,9 +289,9 @@ export function ShopScreen({ player, setScreen, setPlayer, notify }: ShopScreenP
                 </div>
                 <button
                   className={`text-sm py-2 px-3 shrink-0 rounded-xl font-russo transition-all ${canAfford ? 'bg-yellow-400 text-gray-900 hover:bg-yellow-300 active:scale-95' : 'bg-white/10 text-white/30 cursor-not-allowed'}`}
-                  onClick={() => { if (!canAfford) { notify('❌ Недостаточно монет!'); return; } item.action(); }}
+                  onClick={() => { if (!canAfford) { notify(t('not_enough_coins')); return; } item.action(); }}
                 >
-                  {item.price.toLocaleString()} 🪙
+                  {item.price.toLocaleString()} <CoinIcon size={13} />
                 </button>
               </div>
             );
@@ -307,16 +309,16 @@ export function ShopScreen({ player, setScreen, setPlayer, notify }: ShopScreenP
                   setPlayer(prev => ({ ...prev, gems: prev.gems - pack.gems, coins: prev.coins + pack.coins }));
                   notify(`✅ Получено ${pack.coins.toLocaleString()} монет!`);
                 } else {
-                  notify('❌ Недостаточно кристаллов!');
+                  notify(t('not_enough_gems'));
                 }
               }}
               className="card-game p-4 flex flex-col items-center gap-2 border border-white/10 hover:border-yellow-500/40 transition-all rounded-2xl"
             >
-              <div className="text-3xl">🪙</div>
+              <CoinIcon size={32} />
               <div className="font-russo text-yellow-400 text-lg">{pack.coins.toLocaleString()}</div>
-              <div className="text-white/30 text-xs">за {pack.gems} 💎</div>
-              <div className="bg-purple-500/20 border border-purple-500/30 text-purple-300 font-russo text-sm py-1.5 px-4 w-full text-center rounded-xl">
-                {pack.gems} 💎
+              <div className="text-white/30 text-xs flex items-center gap-1">за {pack.gems} <GemIcon size={12} /></div>
+              <div className="bg-purple-500/20 border border-purple-500/30 text-purple-300 font-russo text-sm py-1.5 px-4 w-full text-center rounded-xl flex items-center justify-center gap-1">
+                {pack.gems} <GemIcon size={13} />
               </div>
             </button>
           ))}
@@ -327,7 +329,7 @@ export function ShopScreen({ player, setScreen, setPlayer, notify }: ShopScreenP
         <div className="flex flex-col gap-3">
           {!inYa && (
             <div className="card-game p-3 text-center text-white/40 text-xs font-nunito border border-yellow-400/10">
-              💡 Покупка кристаллов доступна в Яндекс Играх
+              {t('gems_ya_only')}
             </div>
           )}
           <div className="grid grid-cols-2 gap-3">
@@ -344,10 +346,10 @@ export function ShopScreen({ player, setScreen, setPlayer, notify }: ShopScreenP
                   `}
                 >
                   {pack.popular && (
-                    <div className="absolute top-0 left-0 right-0 bg-yellow-400 text-gray-900 font-russo text-[10px] py-0.5 text-center">ХИТ</div>
+                    <div className="absolute top-0 left-0 right-0 bg-yellow-400 text-gray-900 font-russo text-[10px] py-0.5 text-center">{t('tag_hit')}</div>
                   )}
-                  <div className={`text-3xl ${pack.popular ? 'mt-3' : ''}`}>
-                    {isLoading ? '⏳' : '💎'}
+                  <div className={`flex items-center justify-center ${pack.popular ? 'mt-3' : ''}`} style={{ height: '2.25rem' }}>
+                    {isLoading ? <span className="text-3xl">⏳</span> : <GemIcon size={36} />}
                   </div>
                   <div className="font-russo text-white text-xl">{pack.gems}</div>
                   {pack.bonus && (
@@ -356,7 +358,7 @@ export function ShopScreen({ player, setScreen, setPlayer, notify }: ShopScreenP
                   <div className={`font-russo text-sm py-1.5 px-4 w-full text-center rounded-xl
                     ${isLoading ? 'bg-white/20 text-white/60' : 'bg-yellow-400 text-gray-900'}
                   `}>
-                    {isLoading ? 'Оплата...' : pack.price}
+                    {isLoading ? t('paying') : pack.price}
                   </div>
                 </button>
               );
@@ -364,7 +366,7 @@ export function ShopScreen({ player, setScreen, setPlayer, notify }: ShopScreenP
           </div>
           <div className="flex items-center gap-3">
             <div className="flex-1 h-px bg-white/10" />
-            <span className="text-white/20 text-xs font-nunito">или</span>
+            <span className="text-white/20 text-xs font-nunito">{t('or')}</span>
             <div className="flex-1 h-px bg-white/10" />
           </div>
           <button
@@ -374,10 +376,10 @@ export function ShopScreen({ player, setScreen, setPlayer, notify }: ShopScreenP
           >
             <span className="text-lg">{restoring ? '⏳' : '♻️'}</span>
             <span className="font-russo text-white/60 text-sm">
-              {restoring ? 'Проверяю...' : 'Восстановить покупки'}
+              {restoring ? t('restoring') : t('restore_btn')}
             </span>
           </button>
-          <p className="text-white/20 text-xs text-center font-nunito">Оплата через Яндекс · Безопасно</p>
+          <p className="text-white/20 text-xs text-center font-nunito">{t('payment_safe')}</p>
         </div>
       )}
     </div>

@@ -701,6 +701,7 @@ export function loadProfile(): PlayerData | null {
 
 export function profileToSavePayload(p: PlayerData) {
   return {
+    name: p.name,
     emoji: p.emoji,
     coins: p.coins,
     gems: p.gems,
@@ -711,6 +712,13 @@ export function profileToSavePayload(p: PlayerData) {
     selectedCar: p.selectedCar,
     ownedCars: p.cars.filter(c => c.owned).map(c => c.id),
     upgrades: p.upgrades,
+    cars: p.cars,
+    extraLives: p.extraLives ?? 0,
+    coinBoostSessions: p.coinBoostSessions ?? 0,
+    xpBoostGames: p.xpBoostGames ?? 0,
+    loginStreak: p.loginStreak ?? 0,
+    lastLoginDate: p.lastLoginDate ?? '',
+    level: p.level ?? 1,
   };
 }
 

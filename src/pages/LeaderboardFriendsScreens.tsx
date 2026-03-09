@@ -1,6 +1,7 @@
 import React from 'react';
 import { PlayerData, LeaderEntry, LeaderboardResult, Screen } from './parkingTypes';
 import FriendsPanel from '@/components/FriendsPanel';
+import { t } from '@/i18n';
 
 // ──────────────── FRIENDS ────────────────
 interface FriendsScreenProps {
@@ -15,7 +16,7 @@ export function FriendsScreen({ player, localPlayerId, setScreen, notify }: Frie
     <div className="min-h-screen flex flex-col px-4 py-6 gap-5 max-w-lg mx-auto">
       <div className="flex items-center gap-3">
         <button className="btn-game bg-white/10 text-white border-b-white/20 py-2 px-4" onClick={() => setScreen('menu')}>←</button>
-        <h2 className="font-russo text-2xl text-yellow-400">👥 Друзья</h2>
+        <h2 className="font-russo text-2xl text-yellow-400">{t('friends_title')}</h2>
       </div>
       <FriendsPanel playerName={player.name} playerEmoji={player.emoji} localPlayerId={localPlayerId} notify={notify} />
     </div>
@@ -43,7 +44,7 @@ export function LeaderboardScreen({ player, leaderboardData, setScreen }: Leader
     <div className="min-h-screen flex flex-col px-4 py-6 gap-5 max-w-lg mx-auto">
       <div className="flex items-center gap-3">
         <button className="btn-game bg-white/10 text-white border-b-white/20 py-2 px-4" onClick={() => setScreen('menu')}>←</button>
-        <h2 className="font-russo text-2xl text-yellow-400">🏆 Топ игроков</h2>
+        <h2 className="font-russo text-2xl text-yellow-400">{t('leaderboard_title')}</h2>
       </div>
 
       {/* Пьедестал */}
@@ -82,7 +83,7 @@ export function LeaderboardScreen({ player, leaderboardData, setScreen }: Leader
               </div>
               <div className="text-right shrink-0">
                 <div className="font-russo text-yellow-400 text-sm">{entry.wins}</div>
-                <div className="text-white/30 text-xs font-nunito">побед</div>
+                <div className="text-white/30 text-xs font-nunito">{t('wins_label')}</div>
               </div>
             </div>
           );
@@ -100,13 +101,13 @@ export function LeaderboardScreen({ player, leaderboardData, setScreen }: Leader
           </div>
           <div className="text-right shrink-0">
             <div className="font-russo text-yellow-400 text-sm">{player.wins}</div>
-            <div className="text-white/30 text-xs font-nunito">побед</div>
+            <div className="text-white/30 text-xs font-nunito">{t('wins_label')}</div>
           </div>
         </div>
       )}
 
       {onlineLeaders.length === 0 && (
-        <p className="text-center text-white/20 font-nunito text-sm">Данные загружаются...</p>
+        <p className="text-center text-white/20 font-nunito text-sm">{t('loading')}</p>
       )}
     </div>
   );

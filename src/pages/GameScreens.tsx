@@ -5,6 +5,7 @@ import Icon from '@/components/ui/icon';
 import { PlayerData, Screen, DailyQuest, WeeklyQuest, RoomState, todayDateStr, weeklyDateStr, xpForLevel } from './parkingTypes';
 import { t } from '@/i18n';
 import { PrivacyPolicyModal } from './LoginScreen';
+import { CoinIcon, GemIcon } from '@/components/ui/CoinIcon';
 
 const MUTE_KEY = 'king_parking_muted';
 function useMute() {
@@ -75,8 +76,8 @@ export function MenuScreen({ player, setScreen, onPlay, onQuestClaim, onWeeklyQu
               {streak > 0 && <div className="text-orange-400 text-xs font-nunito">🔥 {streak}</div>}
             </div>
             <div className="flex items-center gap-2 mt-1">
-              <span className="coin-badge text-xs">🪙 {player.coins.toLocaleString()}</span>
-              <span className="gem-badge text-xs">💎 {player.gems}</span>
+              <span className="coin-badge text-xs"><CoinIcon size={13} /> {player.coins.toLocaleString()}</span>
+              <span className="gem-badge text-xs"><GemIcon size={13} /> {player.gems}</span>
             </div>
             <div className="mt-1.5">
               <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
@@ -129,10 +130,10 @@ export function MenuScreen({ player, setScreen, onPlay, onQuestClaim, onWeeklyQu
                         <div className="shrink-0 text-green-400 text-xs">✅</div>
                       ) : canClaim ? (
                         <button className="shrink-0 bg-yellow-400 text-gray-900 font-russo text-xs px-2 py-1 rounded-lg hover:bg-yellow-300 transition-all whitespace-nowrap" onClick={() => onQuestClaim?.(q.id)}>
-                          Забрать!
+                          {t('claim')}
                         </button>
                       ) : (
-                        <div className="shrink-0 text-xs font-nunito text-yellow-400/60 whitespace-nowrap">+{q.reward.coins}🪙{q.reward.gems ? ` +${q.reward.gems}💎` : ''}</div>
+                        <div className="shrink-0 text-xs font-nunito text-yellow-400/60 whitespace-nowrap flex items-center gap-0.5">+{q.reward.coins}<CoinIcon size={12} />{q.reward.gems ? <>{' '}+{q.reward.gems}<GemIcon size={12} /></> : ''}</div>
                       )}
                     </div>
                   );
@@ -158,13 +159,13 @@ export function MenuScreen({ player, setScreen, onPlay, onQuestClaim, onWeeklyQu
                         <div className="h-1 bg-white/10 rounded-full mt-1 overflow-hidden">
                           <div className="h-full bg-gradient-to-r from-purple-500 to-purple-300 rounded-full transition-all" style={{ width: `${pct}%` }} />
                         </div>
-                        <div className="text-purple-400/60 text-[10px] font-nunito mt-0.5">+{q.reward.coins}🪙 +{q.reward.gems}💎</div>
+                        <div className="text-purple-400/60 text-[10px] font-nunito mt-0.5 flex items-center gap-0.5">+{q.reward.coins}<CoinIcon size={12} /> +{q.reward.gems}<GemIcon size={12} /></div>
                       </div>
                       {q.claimed ? (
                         <div className="shrink-0 text-green-400 text-xs">✅</div>
                       ) : canClaim ? (
                         <button className="shrink-0 bg-purple-500 text-white font-russo text-xs px-2 py-1 rounded-lg hover:bg-purple-400 transition-all whitespace-nowrap" onClick={() => onWeeklyQuestClaim?.(q.id)}>
-                          Забрать!
+                          {t('claim')}
                         </button>
                       ) : null}
                     </div>
@@ -283,7 +284,7 @@ export function GameScreen({
           >
             <Icon name={muted ? 'VolumeX' : 'Volume2'} size={14} />
           </button>
-          <div className="coin-badge text-xs py-1 px-2">🪙 {player.coins.toLocaleString()}</div>
+          <div className="coin-badge text-xs py-1 px-2"><CoinIcon size={13} /> {player.coins.toLocaleString()}</div>
         </div>
       </div>
 
@@ -326,11 +327,11 @@ export function GameScreen({
                 });
                 notify(`🔧 +${repairInfo.heal} HP`);
               } else {
-                notify('❌ Мало монет!');
+                notify(t('low_coins'));
               }
             }}
           >
-            🔧 {repairInfo.pct}% — {repairInfo.cost}🪙
+            🔧 {repairInfo.pct}% — {repairInfo.cost} <CoinIcon size={13} />
           </button>
         </div>
       )}
@@ -338,17 +339,17 @@ export function GameScreen({
       {/* Оффер второй жизни */}
       {extraLifeOffer && (
         <div className="shrink-0 flex flex-col items-center gap-2 px-4 py-2 animate-bounce-in">
-          <div className="font-russo text-red-400 text-sm text-center">💀 Тебя вышибли!</div>
-          <div className="font-nunito text-white/60 text-xs text-center">Использовать вторую жизнь? ({player.extraLives ?? 0} шт.)</div>
+          <div className="font-russo text-red-400 text-sm text-center">{t('eliminated')}</div>
+          <div className="font-nunito text-white/60 text-xs text-center">{t('use_extra_life')} ({player.extraLives ?? 0} {t('pcs_suffix')})</div>
           <div className="flex gap-3">
             <button
               className="btn-yellow px-5 py-2 text-sm font-russo shadow-2xl animate-pulse"
               onClick={handleUseExtraLife}
-            >❤️ Продолжить!</button>
+            >{t('continue_btn')}</button>
             <button
               className="px-4 py-2 text-sm font-russo rounded-xl bg-white/10 text-white/50 hover:bg-white/20 transition-all"
               onClick={onDeclineExtraLife}
-            >Отказаться</button>
+            >{t('decline_btn')}</button>
           </div>
         </div>
       )}
@@ -373,7 +374,7 @@ export function GameScreen({
           onTouchCancel={() => { keysRef.current.delete('ArrowDown'); keysRef.current.add('ArrowUp'); }}
         >
           <span style={{ fontSize: 22 }}>⬇</span>
-          <span style={{ fontSize: 9, color: 'rgba(255,150,150,0.9)', fontWeight: 700 }}>ТОРМОЗ</span>
+          <span style={{ fontSize: 9, color: 'rgba(255,150,150,0.9)', fontWeight: 700 }}>{t('brake')}</span>
         </button>
 
         {/* Поворот вправо */}
@@ -395,7 +396,7 @@ export function GameScreen({
             onTouchCancel={() => keysRef.current.delete(' ')}
           >
             <span style={{ fontSize: 24 }}>⚡</span>
-            <span style={{ fontSize: 9, color: 'rgba(255,210,0,0.9)', fontWeight: 700 }}>НИТРО</span>
+            <span style={{ fontSize: 9, color: 'rgba(255,210,0,0.9)', fontWeight: 700 }}>{t('nitro_btn')}</span>
           </button>
         )}
       </div>
@@ -441,29 +442,29 @@ export function GameOverScreen({ gameResult, player, onRestart, onMenu }: GameOv
           </div>
           <div className="flex justify-between items-center bg-yellow-500/10 rounded-2xl p-3">
             <span className="text-white/50 font-nunito text-sm">{t('coins')}</span>
-            <span className="font-russo text-yellow-400">+{coinsEarned} 🪙</span>
+            <span className="font-russo text-yellow-400">+{coinsEarned} <CoinIcon size={14} /></span>
           </div>
         </div>
         {/* Активные расходники */}
         {(coinBoost || xpBoost || extraLives > 0) && (
           <div className="w-full bg-white/5 rounded-2xl p-3 flex flex-col gap-1.5">
-            <div className="text-white/40 font-nunito text-xs text-center mb-0.5">Активные расходники</div>
+            <div className="text-white/40 font-nunito text-xs text-center mb-0.5">{t('active_boosts')}</div>
             {coinBoost && (
               <div className="flex items-center justify-between">
-                <span className="font-nunito text-xs text-yellow-300">💰 Буст монет x2</span>
-                <span className="font-russo text-xs text-yellow-400">{player.coinBoostSessions} игр</span>
+                <span className="font-nunito text-xs text-yellow-300">{t('coin_boost_label')}</span>
+                <span className="font-russo text-xs text-yellow-400">{player.coinBoostSessions} {t('games_suffix')}</span>
               </div>
             )}
             {xpBoost && (
               <div className="flex items-center justify-between">
-                <span className="font-nunito text-xs text-purple-300">⭐ Буст XP x2</span>
-                <span className="font-russo text-xs text-purple-400">{player.xpBoostGames} игр</span>
+                <span className="font-nunito text-xs text-purple-300">{t('xp_boost_label')}</span>
+                <span className="font-russo text-xs text-purple-400">{player.xpBoostGames} {t('games_suffix')}</span>
               </div>
             )}
             {extraLives > 0 && (
               <div className="flex items-center justify-between">
-                <span className="font-nunito text-xs text-red-300">❤️ Вторые жизни</span>
-                <span className="font-russo text-xs text-red-400">{extraLives} шт.</span>
+                <span className="font-nunito text-xs text-red-300">{t('extra_lives_label')}</span>
+                <span className="font-russo text-xs text-red-400">{extraLives} {t('pcs_suffix')}</span>
               </div>
             )}
           </div>

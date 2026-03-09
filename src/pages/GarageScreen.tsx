@@ -1,5 +1,7 @@
 import React from 'react';
 import { PlayerData, Screen, RARITIES, UPGRADE_COSTS, UPGRADE_BONUS } from './parkingTypes';
+import { t } from '@/i18n';
+import { CoinIcon, GemIcon } from '@/components/ui/CoinIcon';
 
 interface GarageScreenProps {
   player: PlayerData;
@@ -14,10 +16,10 @@ export function GarageScreen({ player, setScreen, setPlayer, notify }: GarageScr
     <div className="min-h-screen flex flex-col px-4 py-6 gap-4 max-w-lg mx-auto">
       <div className="flex items-center gap-3">
         <button className="btn-game bg-white/10 text-white border-b-white/20 py-2 px-4" onClick={() => setScreen('menu')}>←</button>
-        <h2 className="font-russo text-2xl text-yellow-400">🔧 Гараж</h2>
+        <h2 className="font-russo text-2xl text-yellow-400">{t('garage_title')}</h2>
         <div className="ml-auto flex gap-2">
-          <div className="coin-badge">🪙 {player.coins.toLocaleString()}</div>
-          <div className="gem-badge">💎 {player.gems}</div>
+          <div className="coin-badge"><CoinIcon size={14} /> {player.coins.toLocaleString()}</div>
+          <div className="gem-badge"><GemIcon size={14} /> {player.gems}</div>
         </div>
       </div>
 
@@ -31,7 +33,7 @@ export function GarageScreen({ player, setScreen, setPlayer, notify }: GarageScr
         {/* Прочность */}
         <div className="w-full">
           <div className="flex justify-between text-xs font-nunito font-bold mb-1">
-            <span className="text-white/50">❤️ Прочность</span>
+            <span className="text-white/50">{t('durability')}</span>
             <span className="text-white">{sel.hp} / {sel.maxHp} <span className="text-white/30">(Lv.{sel.hpLevel})</span></span>
           </div>
           <div className="damage-bar mb-2">
@@ -49,20 +51,20 @@ export function GarageScreen({ player, setScreen, setPlayer, notify }: GarageScr
                     return { ...c, hpLevel: newLevel, maxHp: newMaxHp, hp: Math.min(c.hp, newMaxHp) };
                   }) }));
                   notify(`✅ Прочность улучшена! +${UPGRADE_BONUS.hp} HP`);
-                } else notify('❌ Недостаточно монет!');
+                } else notify(t('not_enough_coins'));
               }}>
               <span className="font-russo text-green-400 text-xs">⬆ +{UPGRADE_BONUS.hp} HP</span>
-              <span className="font-russo text-yellow-400 text-xs">{UPGRADE_COSTS.hp[sel.hpLevel]} 🪙</span>
+              <span className="font-russo text-yellow-400 text-xs">{UPGRADE_COSTS.hp[sel.hpLevel]} <CoinIcon size={12} /></span>
             </button>
           ) : (
-            <div className="text-center text-green-400 text-xs font-russo">✅ Макс. прочность</div>
+            <div className="text-center text-green-400 text-xs font-russo">{t('max_durability')}</div>
           )}
         </div>
 
         {/* Броня */}
         <div className="w-full">
           <div className="flex justify-between text-xs font-nunito font-bold mb-1">
-            <span className="text-white/50">🛡️ Броня</span>
+            <span className="text-white/50">{t('armor')}</span>
             <span className="text-white">{sel.armor.toFixed(1)} <span className="text-white/30">(Lv.{sel.armorLevel})</span></span>
           </div>
           <div className="damage-bar mb-2">
@@ -80,20 +82,20 @@ export function GarageScreen({ player, setScreen, setPlayer, notify }: GarageScr
                     return { ...c, armorLevel: newLevel, armor: newArmor };
                   }) }));
                   notify(`✅ Броня улучшена! +${UPGRADE_BONUS.armor}`);
-                } else notify('❌ Недостаточно монет!');
+                } else notify(t('not_enough_coins'));
               }}>
               <span className="font-russo text-blue-400 text-xs">⬆ +{UPGRADE_BONUS.armor} брони</span>
-              <span className="font-russo text-yellow-400 text-xs">{UPGRADE_COSTS.armor[sel.armorLevel]} 🪙</span>
+              <span className="font-russo text-yellow-400 text-xs">{UPGRADE_COSTS.armor[sel.armorLevel]} <CoinIcon size={12} /></span>
             </button>
           ) : (
-            <div className="text-center text-blue-400 text-xs font-russo">✅ Макс. броня</div>
+            <div className="text-center text-blue-400 text-xs font-russo">{t('max_armor')}</div>
           )}
         </div>
 
         {/* Скорость */}
         <div className="w-full">
           <div className="flex justify-between text-xs font-nunito font-bold mb-1">
-            <span className="text-white/50">⚡ Скорость</span>
+            <span className="text-white/50">{t('speed')}</span>
             <span className="text-white">{sel.maxSpeed.toFixed(1)} <span className="text-white/30">(Lv.{sel.speedLevel})</span></span>
           </div>
           <div className="damage-bar mb-2">
@@ -111,13 +113,13 @@ export function GarageScreen({ player, setScreen, setPlayer, notify }: GarageScr
                     return { ...c, speedLevel: newLevel, maxSpeed: newMaxSpeed, speed: newMaxSpeed };
                   }) }));
                   notify(`✅ Скорость улучшена! +${UPGRADE_BONUS.speed}`);
-                } else notify('❌ Недостаточно монет!');
+                } else notify(t('not_enough_coins'));
               }}>
               <span className="font-russo text-orange-400 text-xs">⬆ +{UPGRADE_BONUS.speed} скорости</span>
-              <span className="font-russo text-yellow-400 text-xs">{UPGRADE_COSTS.speed[sel.speedLevel]} 🪙</span>
+              <span className="font-russo text-yellow-400 text-xs">{UPGRADE_COSTS.speed[sel.speedLevel]} <CoinIcon size={12} /></span>
             </button>
           ) : (
-            <div className="text-center text-orange-400 text-xs font-russo">✅ Макс. скорость</div>
+            <div className="text-center text-orange-400 text-xs font-russo">{t('max_speed')}</div>
           )}
         </div>
 
@@ -127,17 +129,17 @@ export function GarageScreen({ player, setScreen, setPlayer, notify }: GarageScr
             onClick={() => {
               if (player.coins >= sel.repairCost) {
                 setPlayer(prev => ({ ...prev, coins: prev.coins - sel.repairCost, cars: prev.cars.map((c, i) => i === prev.selectedCar ? { ...c, hp: c.maxHp } : c) }));
-                notify('✅ Машина отремонтирована!');
-              } else notify('❌ Недостаточно монет!');
+                notify(t('repaired_ok'));
+              } else notify(t('not_enough_coins'));
             }}>
-            🔨 Починить — {sel.repairCost} 🪙
+            {t('repair_car')} — {sel.repairCost} <CoinIcon size={14} />
           </button>
         ) : (
-          <div className="text-green-400 font-russo text-sm">✅ Машина в идеальном состоянии</div>
+          <div className="text-green-400 font-russo text-sm">{t('car_perfect')}</div>
         )}
       </div>
 
-      <h3 className="font-russo text-white/40 text-xs uppercase tracking-wider">Коллекция</h3>
+      <h3 className="font-russo text-white/40 text-xs uppercase tracking-wider">{t('collection')}</h3>
       <div className="grid grid-cols-3 gap-3">
         {player.cars.map((car, idx) => {
           const r = RARITIES[car.rarity];
@@ -149,13 +151,13 @@ export function GarageScreen({ player, setScreen, setPlayer, notify }: GarageScr
                 else if (player.coins >= car.price) {
                   setPlayer(prev => ({ ...prev, coins: prev.coins - car.price, cars: prev.cars.map((c, i) => i === idx ? { ...c, owned: true } : c), selectedCar: idx }));
                   notify(`🎉 Куплен ${car.name}!`);
-                } else notify('❌ Недостаточно монет!');
+                } else notify(t('not_enough_coins'));
               }}
               className={`${r.bg} border-2 ${isSel ? r.border : 'border-white/10'} rounded-2xl p-3 flex flex-col items-center gap-1 transition-all hover:scale-105 ${isSel ? 'scale-105' : ''}`}>
               <div className="text-3xl">{car.emoji}</div>
               <div className={`font-russo text-xs text-center ${r.color}`}>{car.name}</div>
               <div className={`text-[10px] font-nunito uppercase ${r.color} opacity-70`}>{r.label}</div>
-              {!car.owned && <div className="text-yellow-400 text-xs font-russo mt-1">{car.price} 🪙</div>}
+              {!car.owned && <div className="text-yellow-400 text-xs font-russo mt-1 flex items-center gap-0.5 justify-center">{car.price} <CoinIcon size={12} /></div>}
               {car.owned && isSel && <div className="text-green-400 text-xs font-bold">✓</div>}
             </button>
           );

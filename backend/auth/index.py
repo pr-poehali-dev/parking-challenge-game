@@ -28,7 +28,7 @@ def err(msg: str, code: int = 400) -> dict:
     return {'statusCode': code, 'headers': {**CORS_HEADERS, 'Content-Type': 'application/json'}, 'body': json.dumps({'error': msg})}
 
 def row_to_profile(row) -> dict:
-    return {
+    result = {
         'id': row[0],
         'name': row[1],
         'emoji': row[2],
@@ -42,6 +42,19 @@ def row_to_profile(row) -> dict:
         'ownedCars': [int(x) for x in row[11].split(',') if x],
         'upgrades': json.loads(row[12]) if row[12] else {},
     }
+    if len(row) > 13 and row[13]:
+        result['cars'] = json.loads(row[13])
+    if len(row) > 14 and row[14]:
+        extra = json.loads(row[14])
+        result.update({
+            'extraLives': extra.get('extraLives', 0),
+            'coinBoostSessions': extra.get('coinBoostSessions', 0),
+            'xpBoostGames': extra.get('xpBoostGames', 0),
+            'loginStreak': extra.get('loginStreak', 0),
+            'lastLoginDate': extra.get('lastLoginDate', ''),
+            'level': extra.get('level', 1),
+        })
+    return result
 
 def handler(event: dict, context) -> dict:
     if event.get('httpMethod') == 'OPTIONS':
@@ -169,18 +182,29 @@ def handler(event: dict, context) -> dict:
             selected_car = int(profile.get('selectedCar', 0))
             owned_cars = ','.join(str(x) for x in (profile.get('ownedCars') or [0]))
             upgrades = json.dumps(profile.get('upgrades') or {})
+            cars_json = json.dumps(profile.get('cars') or []) if profile.get('cars') else None
+            extra_data = json.dumps({
+                'extraLives': profile.get('extraLives', 0),
+                'coinBoostSessions': profile.get('coinBoostSessions', 0),
+                'xpBoostGames': profile.get('xpBoostGames', 0),
+                'loginStreak': profile.get('loginStreak', 0),
+                'lastLoginDate': profile.get('lastLoginDate', ''),
+                'level': profile.get('level', 1),
+            })
 
             cur.execute(
-                f'''INSERT INTO {SCHEMA}.players (name, emoji, password_hash, coins, gems, xp, wins, games_played, best_position, selected_car, owned_cars, upgrades, ya_id)
-                    VALUES (%s, %s, '', %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                f'''INSERT INTO {SCHEMA}.players (name, emoji, password_hash, coins, gems, xp, wins, games_played, best_position, selected_car, owned_cars, upgrades, ya_id, cars_json, extra_data)
+                    VALUES (%s, %s, '', %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                     ON CONFLICT (ya_id) DO UPDATE SET
                         name = EXCLUDED.name, emoji = EXCLUDED.emoji,
                         coins = EXCLUDED.coins, gems = EXCLUDED.gems, xp = EXCLUDED.xp,
                         wins = EXCLUDED.wins, games_played = EXCLUDED.games_played,
                         best_position = EXCLUDED.best_position, selected_car = EXCLUDED.selected_car,
                         owned_cars = EXCLUDED.owned_cars, upgrades = EXCLUDED.upgrades,
+                        cars_json = COALESCE(EXCLUDED.cars_json, {SCHEMA}.players.cars_json),
+                        extra_data = EXCLUDED.extra_data,
                         updated_at = NOW()''',
-                (name, emoji, coins, gems, xp, wins, games_played, best_position, selected_car, owned_cars, upgrades, ya_id)
+                (name, emoji, coins, gems, xp, wins, games_played, best_position, selected_car, owned_cars, upgrades, ya_id, cars_json, extra_data)
             )
             conn.commit()
             return ok({'success': True})
@@ -203,18 +227,29 @@ def handler(event: dict, context) -> dict:
             selected_car = int(profile.get('selectedCar', 0))
             owned_cars = ','.join(str(x) for x in (profile.get('ownedCars') or [0]))
             upgrades = json.dumps(profile.get('upgrades') or {})
+            cars_json = json.dumps(profile.get('cars') or []) if profile.get('cars') else None
+            extra_data = json.dumps({
+                'extraLives': profile.get('extraLives', 0),
+                'coinBoostSessions': profile.get('coinBoostSessions', 0),
+                'xpBoostGames': profile.get('xpBoostGames', 0),
+                'loginStreak': profile.get('loginStreak', 0),
+                'lastLoginDate': profile.get('lastLoginDate', ''),
+                'level': profile.get('level', 1),
+            })
 
             cur.execute(
-                f'''INSERT INTO {SCHEMA}.players (name, emoji, password_hash, coins, gems, xp, wins, games_played, best_position, selected_car, owned_cars, upgrades, anon_id)
-                    VALUES (%s, %s, '', %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                f'''INSERT INTO {SCHEMA}.players (name, emoji, password_hash, coins, gems, xp, wins, games_played, best_position, selected_car, owned_cars, upgrades, anon_id, cars_json, extra_data)
+                    VALUES (%s, %s, '', %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                     ON CONFLICT (anon_id) DO UPDATE SET
                         name = EXCLUDED.name, emoji = EXCLUDED.emoji,
                         coins = EXCLUDED.coins, gems = EXCLUDED.gems, xp = EXCLUDED.xp,
                         wins = EXCLUDED.wins, games_played = EXCLUDED.games_played,
                         best_position = EXCLUDED.best_position, selected_car = EXCLUDED.selected_car,
                         owned_cars = EXCLUDED.owned_cars, upgrades = EXCLUDED.upgrades,
+                        cars_json = COALESCE(EXCLUDED.cars_json, {SCHEMA}.players.cars_json),
+                        extra_data = EXCLUDED.extra_data,
                         updated_at = NOW()''',
-                (name, emoji, coins, gems, xp, wins, games_played, best_position, selected_car, owned_cars, upgrades, anon_id)
+                (name, emoji, coins, gems, xp, wins, games_played, best_position, selected_car, owned_cars, upgrades, anon_id, cars_json, extra_data)
             )
             conn.commit()
             return ok({'success': True})
@@ -224,7 +259,7 @@ def handler(event: dict, context) -> dict:
             if not ya_id:
                 return err('Нет yaId')
             cur.execute(
-                f'''SELECT id, name, emoji, password_hash, coins, gems, xp, wins, games_played, best_position, selected_car, owned_cars, upgrades
+                f'''SELECT id, name, emoji, password_hash, coins, gems, xp, wins, games_played, best_position, selected_car, owned_cars, upgrades, cars_json, extra_data
                     FROM {SCHEMA}.players WHERE ya_id = %s LIMIT 1''',
                 (ya_id,)
             )
@@ -238,7 +273,7 @@ def handler(event: dict, context) -> dict:
             if not anon_id:
                 return err('Нет playerId')
             cur.execute(
-                f'''SELECT id, name, emoji, password_hash, coins, gems, xp, wins, games_played, best_position, selected_car, owned_cars, upgrades
+                f'''SELECT id, name, emoji, password_hash, coins, gems, xp, wins, games_played, best_position, selected_car, owned_cars, upgrades, cars_json, extra_data
                     FROM {SCHEMA}.players WHERE anon_id = %s LIMIT 1''',
                 (anon_id,)
             )
