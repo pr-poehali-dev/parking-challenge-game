@@ -21,12 +21,12 @@ export function ProfileCard({ player, xpInLevel, xpNeeded, onEmojiChange }: Prof
 
       <div className="text-center">
         <div className="font-russo text-2xl text-white">{player.name}</div>
-        <div className="text-white/30 text-sm font-nunito">Уровень {player.level}</div>
+        <div className="text-white/30 text-sm font-nunito">{t('profile_level_label')} {player.level}</div>
       </div>
 
       <div className="w-full">
         <div className="flex justify-between text-xs font-nunito font-bold mb-1">
-          <span className="text-white/30">Опыт</span>
+          <span className="text-white/30">{t('profile_xp_label')}</span>
           <span className="text-yellow-400">{xpInLevel} / {xpNeeded} XP</span>
         </div>
         <div className="damage-bar h-3">
@@ -35,7 +35,7 @@ export function ProfileCard({ player, xpInLevel, xpNeeded, onEmojiChange }: Prof
       </div>
 
       <div>
-        <div className="text-white/30 text-xs font-nunito mb-2 text-center">Аватар:</div>
+        <div className="text-white/30 text-xs font-nunito mb-2 text-center">{t('profile_avatar_label')}:</div>
         <div className="flex gap-2 flex-wrap justify-center">
           {PLAYER_EMOJIS.map(em => (
             <button key={em} onClick={() => onEmojiChange(em)}
@@ -59,7 +59,7 @@ export function PrivacyPolicyModal({ onClose }: PrivacyPolicyModalProps) {
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 p-4" onClick={onClose}>
       <div className="card-game-solid w-full max-w-lg flex flex-col gap-4 p-5 max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between">
-          <h2 className="font-russo text-white text-lg">{t('privacy_policy')}</h2>
+          <h2 className="font-russo text-white text-lg">{t('privacy_policy_title')}</h2>
           <button onClick={onClose} className="text-white/40 hover:text-white text-xl">✕</button>
         </div>
         <div className="font-nunito text-white/60 text-sm flex flex-col gap-3">
@@ -77,7 +77,7 @@ export function PrivacyPolicyModal({ onClose }: PrivacyPolicyModalProps) {
           </p>
           <p className="text-white/30 text-xs">Последнее обновление: март 2025</p>
         </div>
-        <button className="btn-game bg-white/10 text-white border-b-white/20 py-2" onClick={onClose}>Закрыть</button>
+        <button className="btn-game bg-white/10 text-white border-b-white/20 py-2" onClick={onClose}>{t('privacy_close')}</button>
       </div>
     </div>
   );

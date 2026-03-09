@@ -26,7 +26,7 @@ export function GarageScreen({ player, setScreen, setPlayer, notify }: GarageScr
       <div className={`card-game-solid p-6 flex flex-col items-center gap-4 border-2 ${RARITIES[sel.rarity].border}`}>
         <div className="text-6xl animate-float">{sel.emoji}</div>
         <div className="text-center">
-          <div className={`font-russo text-xl ${RARITIES[sel.rarity].color}`}>{sel.name}</div>
+          <div className={`font-russo text-xl ${RARITIES[sel.rarity].color}`}>{t(`car_${sel.id}`)}</div>
           <div className={`text-xs font-nunito font-bold uppercase tracking-wider mt-1 ${RARITIES[sel.rarity].color}`}>{t(`rarity_${sel.rarity}`)}</div>
         </div>
 
@@ -150,12 +150,12 @@ export function GarageScreen({ player, setScreen, setPlayer, notify }: GarageScr
                 if (car.owned) { setPlayer(prev => ({ ...prev, selectedCar: idx })); }
                 else if (player.coins >= car.price) {
                   setPlayer(prev => ({ ...prev, coins: prev.coins - car.price, cars: prev.cars.map((c, i) => i === idx ? { ...c, owned: true } : c), selectedCar: idx }));
-                  notify(`${t('notify_car_bought')} ${car.name}!`);
+                  notify(`${t('notify_car_bought')} ${t(`car_${car.id}`)}!`);
                 } else notify(t('not_enough_coins'));
               }}
               className={`${r.bg} border-2 ${isSel ? r.border : 'border-white/10'} rounded-2xl p-3 flex flex-col items-center gap-1 transition-all hover:scale-105 ${isSel ? 'scale-105' : ''}`}>
               <div className="text-3xl">{car.emoji}</div>
-              <div className={`font-russo text-xs text-center ${r.color}`}>{car.name}</div>
+              <div className={`font-russo text-xs text-center ${r.color}`}>{t(`car_${car.id}`)}</div>
               <div className={`text-[10px] font-nunito uppercase ${r.color} opacity-70`}>{t(`rarity_${car.rarity}`)}</div>
               {!car.owned && <div className="text-yellow-400 text-xs font-russo mt-1 flex items-center gap-0.5 justify-center">{car.price} <CoinIcon size={12} /></div>}
               {car.owned && isSel && <div className="text-green-400 text-xs font-bold">✓</div>}

@@ -76,6 +76,15 @@ interface YaProduct {
   price: string;
   priceValue: string;
   priceCurrencyCode: string;
+  getPriceCurrencyImage: (size?: 'small' | 'medium' | 'svg') => string;
+}
+
+export interface GemPackInfo {
+  id: string;
+  price: string;
+  priceValue: string;
+  priceCurrencyCode: string;
+  currencyImageUrl: string;
 }
 
 interface YaAdv {
@@ -166,12 +175,21 @@ export function isYandexGamesEnv(): boolean {
   return !!(_ysdk ?? window._yaSDK);
 }
 
-export async function getYaCatalog(): Promise<YaProduct[]> {
+export async function getYaCatalog(): Promise<GemPackInfo[]> {
   try {
     const sdk = _ysdk ?? window._yaSDK;
     if (!sdk) return [];
     const payments = await sdk.getPayments({ signed: false });
-    return await payments.catalog();
+    const products = await payments.catalog();
+    return products.map(p => ({
+      id: p.id,
+      price: p.price,
+      priceValue: p.priceValue,
+      priceCurrencyCode: p.priceCurrencyCode,
+      currencyImageUrl: typeof p.getPriceCurrencyImage === 'function'
+        ? p.getPriceCurrencyImage('small')
+        : '',
+    }));
   } catch {
     return [];
   }
@@ -249,10 +267,15 @@ export async function getYaPlayer(): Promise<{ id: string; name: string } | null
   try {
     const sdk = _ysdk ?? window._yaSDK;
     if (!sdk) return null;
-    const p = await sdk.getPlayer({ scopes: false });
+    let p;
+    try {
+      p = await sdk.getPlayer({ scopes: false });
+    } catch {
+      return null;
+    }
     const uid = p.getUniqueID();
-    if (!uid) return null;
-    return { id: `ya_${uid}`, name: p.getName() || 'Игрок' };
+    if (!uid) return null;  // Guest user — no persistent ID available
+    return { id: `ya_${uid}`, name: p.getName() || '' };
   } catch {
     return null;
   }
@@ -489,7 +512,8 @@ export const DAILY_STREAK_REWARDS: { coins: number; gems: number }[] = [
   { coins: 750, gems: 5 },
 ];
 
-export function makeDailyQuests(dateStr?: string): DailyQuest[] {
+export function makeDailyQuests(dateStr?: string, tFn?: (key: string) => string): DailyQuest[] {
+  const tr = tFn ?? ((k: string) => k);
   const d = new Date(dateStr ?? todayDateStr());
   const seed = d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
 
@@ -511,37 +535,37 @@ export function makeDailyQuests(dateStr?: string): DailyQuest[] {
   const allQuests: DailyQuest[] = [
     {
       id: 'play3',
-      label: `Сыграй ${playGoal} ${playGoal === 1 ? 'игру' : playGoal < 5 ? 'игры' : 'игр'}`,
+      label: `${tr('quest_play')} ${playGoal} ${playGoal === 1 ? tr('quest_games_1') : playGoal < 5 ? tr('quest_games_2_4') : tr('quest_games_5')}`,
       goal: playGoal, progress: 0, done: false, claimed: false,
       reward: { coins: 80 + playGoal * 40 },
     },
     {
       id: 'top5',
-      label: `Финишируй в топ-${topN}`,
+      label: `${tr('quest_top')}-${topN}`,
       goal: 1, progress: 0, done: false, claimed: false,
       reward: { coins: topN <= 3 ? 350 : 200, gems: topN <= 3 ? 1 : 0 },
     },
     {
       id: 'survive',
-      label: `Доживи до ${surviveRound}-го раунда`,
+      label: `${tr('quest_survive')} ${surviveRound}${tr('quest_survive2')}`,
       goal: surviveRound, progress: 0, done: false, claimed: false,
       reward: { coins: surviveRound >= 6 ? 380 : 240, gems: surviveRound >= 6 ? 1 : 0 },
     },
     {
       id: 'win',
-      label: `Займи 1-е место ${winGoal === 1 ? 'раз' : winGoal + ' раза'}`,
+      label: `${tr('quest_win')} ${winGoal === 1 ? tr('quest_win_once') : winGoal + ' ' + tr('quest_win_times')}`,
       goal: winGoal, progress: 0, done: false, claimed: false,
       reward: { coins: 200 + winGoal * 100, gems: winGoal >= 2 ? 1 : 0 },
     },
     {
       id: 'play_long',
-      label: 'Сыграй партию без вылета до 8-го раунда',
+      label: tr('quest_no_elim'),
       goal: 1, progress: 0, done: false, claimed: false,
       reward: { coins: 450, gems: 1 },
     },
     {
       id: 'top1_streak',
-      label: 'Финишируй в топ-2 два раза подряд',
+      label: tr('quest_top2_twice'),
       goal: 2, progress: 0, done: false, claimed: false,
       reward: { coins: 500, gems: 2 },
     },
@@ -570,7 +594,8 @@ export function weeklyDateStr() {
   return monday.toISOString().slice(0, 10);
 }
 
-export function makeWeeklyQuests(weekStr?: string): WeeklyQuest[] {
+export function makeWeeklyQuests(weekStr?: string, tFn?: (key: string) => string): WeeklyQuest[] {
+  const tr = tFn ?? ((k: string) => k);
   const w = weekStr ?? weeklyDateStr();
   const parts = w.split('-').map(Number);
   const seed = parts[0] * 10000 + parts[1] * 100 + parts[2];
@@ -583,49 +608,49 @@ export function makeWeeklyQuests(weekStr?: string): WeeklyQuest[] {
   const allWeekly: WeeklyQuest[] = [
     {
       id: 'w_play15',
-      label: 'Сыграй 15 игр за неделю',
+      label: tr('wquest_play15'),
       goal: 15, progress: 0, done: false, claimed: false,
       reward: { coins: 800, gems: 3 },
     },
     {
       id: 'w_play25',
-      label: 'Сыграй 25 игр за неделю',
+      label: tr('wquest_play25'),
       goal: 25, progress: 0, done: false, claimed: false,
       reward: { coins: 1500, gems: 5 },
     },
     {
       id: 'w_win5',
-      label: 'Победи 5 раз за неделю',
+      label: tr('wquest_win5'),
       goal: 5, progress: 0, done: false, claimed: false,
       reward: { coins: 1000, gems: 4 },
     },
     {
       id: 'w_win10',
-      label: 'Победи 10 раз за неделю',
+      label: tr('wquest_win10'),
       goal: 10, progress: 0, done: false, claimed: false,
       reward: { coins: 2000, gems: 8 },
     },
     {
       id: 'w_top3_10',
-      label: 'Финишируй в топ-3 десять раз',
+      label: tr('wquest_top3'),
       goal: 10, progress: 0, done: false, claimed: false,
       reward: { coins: 1200, gems: 5 },
     },
     {
       id: 'w_survive8_3',
-      label: 'Доживи до 8-го раунда 3 раза',
+      label: tr('wquest_survive8'),
       goal: 3, progress: 0, done: false, claimed: false,
       reward: { coins: 900, gems: 4 },
     },
     {
       id: 'w_daily7',
-      label: 'Выполни все дневные задания 3 дня подряд',
+      label: tr('wquest_daily7'),
       goal: 3, progress: 0, done: false, claimed: false,
       reward: { coins: 1500, gems: 7 },
     },
     {
       id: 'w_streak7',
-      label: 'Входи 7 дней подряд',
+      label: tr('wquest_streak7'),
       goal: 7, progress: 0, done: false, claimed: false,
       reward: { coins: 1000, gems: 10 },
     },

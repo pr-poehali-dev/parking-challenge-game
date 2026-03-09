@@ -35,6 +35,7 @@ export function usePlayerAuth(notify: (msg: string) => void) {
   const [needNickname, setNeedNickname] = useState(false);
   const [dailyBonus, setDailyBonus] = useState<{ streak: number; coins: number; gems: number } | null>(null);
   const autoLoginDone = useRef(false);
+  const initialLoadDone = useRef(false);
 
   const checkDailyBonus = useCallback((p: PlayerData): PlayerData => {
     const today = todayDateStr();
@@ -49,7 +50,7 @@ export function usePlayerAuth(notify: (msg: string) => void) {
       gems: p.gems + reward.gems,
       loginStreak: newStreak,
       lastLoginDate: today,
-      dailyQuests: refreshQuests ? makeDailyQuests() : p.dailyQuests,
+      dailyQuests: refreshQuests ? makeDailyQuests(undefined, t) : p.dailyQuests,
       dailyQuestsDate: today,
     };
     setDailyBonus({ streak: newStreak, coins: reward.coins, gems: reward.gems });
@@ -127,6 +128,7 @@ export function usePlayerAuth(notify: (msg: string) => void) {
         const withBonus = checkDailyBonus(base);
         setPlayer(withBonus);
         saveProfile(withBonus);
+        setTimeout(() => { initialLoadDone.current = true; }, 100);
       } catch {
         const saved = loadProfile();
         if (saved && saved.name) {
@@ -134,6 +136,7 @@ export function usePlayerAuth(notify: (msg: string) => void) {
           setPlayer(withBonus);
           saveProfile(withBonus);
         }
+        setTimeout(() => { initialLoadDone.current = true; }, 100);
       } finally {
         clearTimeout(fallback);
         setIsLoading(false);
@@ -144,6 +147,7 @@ export function usePlayerAuth(notify: (msg: string) => void) {
 
   // Автосохранение
   useEffect(() => {
+    if (!initialLoadDone.current) return;  // Skip saves until initial load is complete
     if (!player.name) return;
     saveProfile(player);
     if (player.password) {

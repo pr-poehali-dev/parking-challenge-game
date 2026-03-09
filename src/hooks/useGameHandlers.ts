@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { PlayerData, RoomState, makeDailyQuests, makeWeeklyQuests, todayDateStr, weeklyDateStr, levelFromXp, LEVEL_REWARDS, showInterstitialAd, isYandexGamesEnv } from '@/pages/parkingTypes';
 import { getFriends, hasFriendInRoom, FRIEND_BONUS } from '@/components/FriendsPanel';
+import { t } from '@/i18n';
 
 // Показывать рекламу каждые N игр
 const AD_EVERY_N_GAMES = 3;
@@ -129,8 +130,8 @@ export function useGameHandlers({ player, setPlayer, roomState, setScreen, notif
     setPlayer(prev => {
       const today = todayDateStr();
       const thisWeek = weeklyDateStr();
-      const baseQuests = prev.dailyQuestsDate === today ? prev.dailyQuests : makeDailyQuests(today);
-      const baseWeekly = prev.weeklyQuestsDate === thisWeek ? (prev.weeklyQuests ?? []) : makeWeeklyQuests(thisWeek);
+      const baseQuests = prev.dailyQuestsDate === today ? prev.dailyQuests : makeDailyQuests(today, t);
+      const baseWeekly = prev.weeklyQuestsDate === thisWeek ? (prev.weeklyQuests ?? []) : makeWeeklyQuests(thisWeek, t);
       const newCompletedLabels: string[] = [];
       const rounds2 = roundsPlayed ?? 0;
 

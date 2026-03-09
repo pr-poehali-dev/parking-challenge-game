@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { PlayerData, Screen, buyGems, isYandexGamesEnv, restoreGemPurchases, getYaCatalog } from './parkingTypes';
+import { PlayerData, Screen, GemPackInfo, buyGems, isYandexGamesEnv, restoreGemPurchases, getYaCatalog } from './parkingTypes';
 import { CoinIcon, GemIcon } from '@/components/ui/CoinIcon';
 import { t } from '@/i18n';
 
@@ -55,14 +55,14 @@ export function ShopScreen({ player, setScreen, setPlayer, notify }: ShopScreenP
   const [buyingId, setBuyingId] = useState<string | null>(null);
   const [restoring, setRestoring] = useState(false);
   const inYa = isYandexGamesEnv();
-  const [sdkPrices, setSdkPrices] = useState<Record<string, string>>({});
+  const [sdkCatalog, setSdkCatalog] = useState<Record<string, GemPackInfo>>({});
 
   useEffect(() => {
     if (!inYa) return;
     getYaCatalog().then(catalog => {
-      const prices: Record<string, string> = {};
-      catalog.forEach(p => { prices[p.id] = p.price; });
-      setSdkPrices(prices);
+      const map: Record<string, GemPackInfo> = {};
+      catalog.forEach(p => { map[p.id] = p; });
+      setSdkCatalog(map);
     }).catch(() => {});
   }, [inYa]);
 
@@ -84,11 +84,11 @@ export function ShopScreen({ player, setScreen, setPlayer, notify }: ShopScreenP
   };
 
   // productId должен совпадать с ID продукта в кабинете разработчика Яндекс Игр
-  const gemPacks: { id: string; gems: number; price: string; bonus?: string; popular?: boolean }[] = [
-    { id: 'gems_100',  gems: 100,  price: sdkPrices['gems_100']  ?? '79₽' },
-    { id: 'gems_300',  gems: 300,  price: sdkPrices['gems_300']  ?? '199₽', bonus: `+50 ${t('bonus_label')}`,  popular: true },
-    { id: 'gems_700',  gems: 700,  price: sdkPrices['gems_700']  ?? '399₽', bonus: `+150 ${t('bonus_label')}` },
-    { id: 'gems_1500', gems: 1500, price: sdkPrices['gems_1500'] ?? '799₽', bonus: `+500 ${t('bonus_label')}` },
+  const gemPacks: { id: string; gems: number; price: string; currencyImg?: string; bonus?: string; popular?: boolean }[] = [
+    { id: 'gems_100',  gems: 100,  price: sdkCatalog['gems_100']?.price  ?? '79 ₽',  currencyImg: sdkCatalog['gems_100']?.currencyImageUrl },
+    { id: 'gems_300',  gems: 300,  price: sdkCatalog['gems_300']?.price  ?? '199 ₽', currencyImg: sdkCatalog['gems_300']?.currencyImageUrl, bonus: `+50 ${t('bonus_label')}`,  popular: true },
+    { id: 'gems_700',  gems: 700,  price: sdkCatalog['gems_700']?.price  ?? '399 ₽', currencyImg: sdkCatalog['gems_700']?.currencyImageUrl, bonus: `+150 ${t('bonus_label')}` },
+    { id: 'gems_1500', gems: 1500, price: sdkCatalog['gems_1500']?.price ?? '799 ₽', currencyImg: sdkCatalog['gems_1500']?.currencyImageUrl, bonus: `+500 ${t('bonus_label')}` },
   ];
 
   const handleBuyGems = async (pack: typeof gemPacks[0]) => {
@@ -365,10 +365,15 @@ export function ShopScreen({ player, setScreen, setPlayer, notify }: ShopScreenP
                   {pack.bonus && (
                     <div className="text-green-400 text-xs font-bold font-nunito">{pack.bonus}</div>
                   )}
-                  <div className={`font-russo text-sm py-1.5 px-4 w-full text-center rounded-xl
+                  <div className={`font-russo text-sm py-1.5 px-3 w-full text-center rounded-xl flex items-center justify-center gap-1
                     ${isLoading ? 'bg-white/20 text-white/60' : 'bg-yellow-400 text-gray-900'}
                   `}>
-                    {isLoading ? t('paying') : pack.price}
+                    {isLoading ? t('paying') : (
+                      <>
+                        {pack.currencyImg && <img src={pack.currencyImg} alt="" className="w-4 h-4 object-contain" />}
+                        {pack.price}
+                      </>
+                    )}
                   </div>
                 </button>
               );
