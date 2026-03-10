@@ -43,6 +43,7 @@ export function usePlayerAuth(notify: (msg: string) => void) {
   const [isLoading, setIsLoading] = useState(true);
   const [needNickname, setNeedNickname] = useState(false);
   const [dailyBonus, setDailyBonus] = useState<{ streak: number; coins: number; gems: number } | null>(null);
+  const [serverOnline, setServerOnline] = useState<boolean | null>(null);
   const autoLoginDone = useRef(false);
 
   // После загрузки сервера сохраняем pid здесь — автосохранение использует ref, не state
@@ -130,8 +131,10 @@ export function usePlayerAuth(notify: (msg: string) => void) {
             if (resp.profile) {
               serverProfile = { ...DEFAULT_PLAYER, ...resp.profile, password: '' } as PlayerData;
             }
+            setServerOnline(true);
           } catch (e) {
             console.log('[Auth] load_ya fetch error:', e);
+            setServerOnline(false);
           }
 
           if (serverProfile) {
@@ -162,8 +165,10 @@ export function usePlayerAuth(notify: (msg: string) => void) {
             } else {
               base = saved;
             }
+            setServerOnline(true);
           } catch {
             base = saved;
+            setServerOnline(false);
           }
           prefetchFriendCode(pid);
         } else {
@@ -267,6 +272,7 @@ export function usePlayerAuth(notify: (msg: string) => void) {
     isLoading,
     needNickname, setNeedNickname,
     dailyBonus, setDailyBonus,
+    serverOnline,
     resolvePlayer,
   };
 }

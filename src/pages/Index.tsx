@@ -39,6 +39,7 @@ export default function Index() {
     isLoading,
     needNickname, setNeedNickname,
     dailyBonus, setDailyBonus,
+    serverOnline,
     resolvePlayer,
   } = usePlayerAuth(notify);
 
@@ -170,6 +171,14 @@ export default function Index() {
       )}
 
       <AchievementToast player={player} />
+
+      {serverOnline === false && (
+        <div className="fixed top-0 left-0 right-0 z-50 flex justify-center pointer-events-none">
+          <div className="bg-red-900/90 border-b border-red-500/50 text-red-200 text-xs font-russo px-4 py-1.5 w-full text-center">
+            ⚠️ Сервер недоступен — прогресс сохраняется локально
+          </div>
+        </div>
+      )}
 
       {notification && (
         <div className="fixed top-4 left-0 right-0 flex justify-center z-50 pointer-events-none">
