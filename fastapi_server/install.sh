@@ -166,9 +166,31 @@ CREATE TABLE IF NOT EXISTS ${DB_SCHEMA}.room_players (
 
 GRANT ALL ON ${DB_SCHEMA}.room_players TO ${DB_USER};
 
+-- =====================================================
+--  ПЕРЕНОС ДАННЫХ из poehali.dev (снимок от 2026-03-10)
+-- =====================================================
+INSERT INTO ${DB_SCHEMA}.players
+  (id, name, emoji, password_hash, coins, gems, xp, wins, games_played,
+   best_position, selected_car, owned_cars, upgrades,
+   ya_id, anon_id, friend_code, created_at, updated_at)
+VALUES
+  (3,  'EDnord',         '😈', 'b0361197c00892a715e4b567de4043af57fc060158b6534a88a7045ba376ae63', 271,   4,   1555, 1, 21, 1,  6, '0,1,6,7', '{"nitro":true,"gps":false,"bumper":false,"autoRepair":false,"magnet":false,"turbo":false,"shield":false}', NULL, NULL, 'ECCBC8', '2026-03-04 13:19:02', '2026-03-09 09:32:22'),
+  (5,  '--',             '🤠', '0ffe1abd1a08215353c233d6e009613e95eec4253832a761af28ff37ac5a150c', 1194,  50,  90,   0, 2,  9,  0, '0',       '{"nitro":false,"gps":false,"bumper":false,"autoRepair":false,"magnet":false,"turbo":false,"shield":false}', NULL, NULL, 'E4DA3B', '2026-03-04 14:30:33', '2026-03-04 14:31:38'),
+  (6,  'Артем',          '😎', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92', 1262,  50,  60,   0, 2,  10, 0, '0',       '{"nitro":false,"gps":false,"bumper":false,"autoRepair":false,"magnet":false,"turbo":false,"shield":false}', NULL, NULL, '167909', '2026-03-05 03:25:24', '2026-03-05 04:13:48'),
+  (7,  'TestKingXYZ9991','😎', '937e8d5fbb48bd4949536cd65b8d35c426b80d2f830c5c308e2cdec422ae2244', 1000,  50,  0,    0, 0,  99, 0, '0',       '{}', NULL, NULL, '8F14E4', '2026-03-05 04:50:50', '2026-03-05 04:50:50'),
+  (8,  'ЯИгрок',        '🚗', '',                                                                 500,   0,   100,  1, 3,  2,  0, '0',       '{}', 'ya_test999888', NULL, 'BE6403', '2026-03-05 09:30:46', '2026-03-09 09:32:21'),
+  (9,  'TestKingXYZ9992','😎', '937e8d5fbb48bd4949536cd65b8d35c426b80d2f830c5c308e2cdec422ae2244', 1000,  50,  0,    0, 0,  99, 0, '0',       '{}', NULL, NULL, '45C48C', '2026-03-05 09:31:25', '2026-03-05 09:31:25'),
+  (12, 'TestKingXYZ9993','😎', '937e8d5fbb48bd4949536cd65b8d35c426b80d2f830c5c308e2cdec422ae2244', 1000,  50,  0,    0, 0,  99, 0, '0',       '{}', NULL, NULL, 'C20AD4', '2026-03-05 10:20:16', '2026-03-05 10:20:16'),
+  (13, 'АнонИгрок',     '🚗', '',                                                                 300,   0,   250,  2, 5,  3,  0, '0',       '{}', NULL, 'anon_test_777', '6D0D59', '2026-03-05 10:20:17', '2026-03-09 09:32:21'),
+  (17, 'Игрок',         '😎', '',                                                                 13000, 100, 200,  0, 2,  6,  0, '0',       '{"nitro":true,"gps":false,"bumper":false,"autoRepair":false,"magnet":false,"turbo":false,"shield":false}', NULL, 'anon_1772877678782_3nzj7md', '70EFDF', '2026-03-08 10:18:01', '2026-03-08 10:18:01')
+ON CONFLICT DO NOTHING;
+
+-- Сдвигаем sequence чтобы новые ID не конфликтовали
+SELECT setval('${DB_SCHEMA}.players_id_seq', (SELECT MAX(id) FROM ${DB_SCHEMA}.players));
+
 EOSQL
 
-info "База данных создана!"
+info "База данных создана и данные перенесены (9 игроков)!"
 
 # =====================================================
 #  ПРИЛОЖЕНИЕ
