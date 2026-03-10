@@ -44,6 +44,7 @@ async function friendsApiWith(localPlayerId: string, action: string, payload: Re
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ action, ...ids, ...payload }),
   });
+  if (!res.ok) throw new Error(`server_error_${res.status}`);
   return res.json();
 }
 

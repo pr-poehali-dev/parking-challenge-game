@@ -15,10 +15,11 @@ export function getOrCreateAnonId(): string {
   } catch { return `anon_${Date.now()}`; }
 }
 
-export const AUTH_URL = 'https://functions.poehali.dev/3b4361d7-46d0-476d-be12-f345c31447fc';
-export const LEADERBOARD_URL = 'https://functions.poehali.dev/507d718a-32e2-4623-a6d8-1cf02d2af300';
-export const ROOM_URL = 'https://functions.poehali.dev/85e13db6-7b27-41b4-95fe-bf60d5d7bed7';
-export const FRIENDS_URL = 'https://functions.poehali.dev/1100a175-cd9d-4695-b2d0-5e32fa4c0f65';
+const _BASE = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
+export const AUTH_URL = _BASE ? `${_BASE}/auth` : 'https://functions.poehali.dev/3b4361d7-46d0-476d-be12-f345c31447fc';
+export const LEADERBOARD_URL = _BASE ? `${_BASE}/leaderboard` : 'https://functions.poehali.dev/507d718a-32e2-4623-a6d8-1cf02d2af300';
+export const ROOM_URL = _BASE ? `${_BASE}/room-manager` : 'https://functions.poehali.dev/85e13db6-7b27-41b4-95fe-bf60d5d7bed7';
+export const FRIENDS_URL = _BASE ? `${_BASE}/friends` : 'https://functions.poehali.dev/1100a175-cd9d-4695-b2d0-5e32fa4c0f65';
 
 // Тип одного игрока в комнате (с бэкенда)
 export interface RoomPlayer {
@@ -314,6 +315,7 @@ export async function roomApi(action: string, payload: Record<string, unknown>):
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ action, ...payload }),
   });
+  if (!res.ok) throw new Error(`server_error_${res.status}`);
   return res.json();
 }
 
@@ -404,6 +406,7 @@ export async function apiAuth(action: string, payload: Record<string, unknown>) 
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ action, ...payload }),
   });
+  if (!res.ok) throw new Error(`server_error_${res.status}`);
   return res.json();
 }
 
