@@ -24,6 +24,19 @@ async function prefetchFriendCode(localPlayerId: string) {
   } catch { /* ignore */ }
 }
 
+// Явно сохраняет профиль на сервер — вызывается только после загрузки серверных данных
+function persistToServer(pid: string, p: PlayerData) {
+  if (!p.name) return;
+  saveProfile(p);
+  if (p.password) {
+    apiAuth('save', { name: p.name, password: p.password, profile: profileToSavePayload(p) }).catch(() => {});
+  } else if (pid.startsWith('ya_')) {
+    apiAuth('save_ya', { yaId: pid, profile: profileToSavePayload(p) }).catch(() => {});
+  } else if (p.name && p.name !== 'Игрок') {
+    apiAuth('save_anon', { playerId: getOrCreateAnonId(), profile: profileToSavePayload(p) }).catch(() => {});
+  }
+}
+
 export function usePlayerAuth(notify: (msg: string) => void) {
   const [player, setPlayer] = useState<PlayerData>(() => loadProfile() ?? DEFAULT_PLAYER);
   const [localPlayerId, setLocalPlayerId] = useState('');
@@ -31,10 +44,11 @@ export function usePlayerAuth(notify: (msg: string) => void) {
   const [needNickname, setNeedNickname] = useState(false);
   const [dailyBonus, setDailyBonus] = useState<{ streak: number; coins: number; gems: number } | null>(null);
   const autoLoginDone = useRef(false);
-  // Используем state вместо ref чтобы эффект автосохранения корректно срабатывал
-  const [serverLoadDone, setServerLoadDone] = useState(false);
 
-  // Перегенерирует label-строки заданий (сохраняя прогресс) после инициализации i18n
+  // После загрузки сервера сохраняем pid здесь — автосохранение использует ref, не state
+  const pidRef = useRef('');
+  const serverLoadDone = useRef(false);
+
   const relabelQuests = useCallback((p: PlayerData): PlayerData => {
     const today = todayDateStr();
     const thisWeek = weeklyDateStr();
@@ -89,7 +103,10 @@ export function usePlayerAuth(notify: (msg: string) => void) {
   useEffect(() => {
     if (autoLoginDone.current) return;
     autoLoginDone.current = true;
-    const fallback = setTimeout(() => { setIsLoading(false); setServerLoadDone(true); }, 5000);
+    const fallback = setTimeout(() => {
+      serverLoadDone.current = true;
+      setIsLoading(false);
+    }, 5000);
 
     (async () => {
       try {
@@ -98,9 +115,11 @@ export function usePlayerAuth(notify: (msg: string) => void) {
         const ya = await getYaPlayer();
         const saved = loadProfile() ? relabelQuests(loadProfile()!) : null;
         let base: PlayerData;
+        let pid = '';
 
         if (ya) {
-          // Загружаем профиль из БД по ya_id — сервер авторитетен
+          pid = ya.id;
+          // Загружаем профиль с сервера — он авторитетен
           let serverProfile: PlayerData | null = null;
           try {
             const resp = await apiAuth('load_ya', { yaId: ya.id });
@@ -110,8 +129,6 @@ export function usePlayerAuth(notify: (msg: string) => void) {
           } catch { /* ignore */ }
 
           if (serverProfile) {
-            // Сервер авторитетен. Берём данные сервера полностью.
-            // Машины берём с сервера если есть, иначе локальные как fallback
             base = {
               ...serverProfile,
               cars: (serverProfile.cars && serverProfile.cars.length > 0)
@@ -119,19 +136,16 @@ export function usePlayerAuth(notify: (msg: string) => void) {
                 : (saved?.cars ?? serverProfile.cars),
             };
           } else {
-            // Нет профиля на сервере — используем локальный или создаём новый
             base = (saved && saved.name) ? saved : {
               ...DEFAULT_PLAYER,
               name: (ya.name && ya.name.length >= 2 && ya.name.length <= 16) ? ya.name : 'Игрок',
             };
           }
-          setLocalPlayerId(ya.id);
           prefetchFriendCode(ya.id);
         } else if (saved && saved.name) {
-          // Анонимный пользователь — загружаем с сервера по anon_id
+          pid = getOrCreateAnonId();
           try {
-            const anonId = getOrCreateAnonId();
-            const resp = await apiAuth('load_anon', { playerId: anonId });
+            const resp = await apiAuth('load_anon', { playerId: pid });
             if (resp.profile) {
               const serverScore = (resp.profile.xp ?? 0) + (resp.profile.coins ?? 0);
               const localScore = (saved.xp ?? 0) + (saved.coins ?? 0);
@@ -144,13 +158,13 @@ export function usePlayerAuth(notify: (msg: string) => void) {
           } catch {
             base = saved;
           }
-          prefetchFriendCode(getOrCreateAnonId());
+          prefetchFriendCode(pid);
         } else {
           base = { ...DEFAULT_PLAYER, name: 'Игрок' };
           setNeedNickname(true);
         }
 
-        // Проверяем незавершённые покупки (требование Яндекса)
+        // Восстанавливаем незавершённые покупки Яндекса
         const restored = await restoreGemPurchases();
         if (restored.restored > 0) {
           base = { ...base, gems: base.gems + restored.restored };
@@ -158,8 +172,19 @@ export function usePlayerAuth(notify: (msg: string) => void) {
         }
 
         const withBonus = checkDailyBonus(base);
-        setPlayer(withBonus);
-        saveProfile(withBonus);
+        const withLabels = relabelQuests(withBonus);
+
+        // Сначала сохраняем pid и флаг — потом setState
+        pidRef.current = pid;
+        serverLoadDone.current = true;
+
+        // Явно сохраняем уже загруженный профиль на сервер
+        persistToServer(pid, withLabels);
+
+        // Обновляем UI
+        setLocalPlayerId(pid);
+        setPlayer(withLabels);
+        saveProfile(withLabels);
       } catch {
         const saved = loadProfile();
         if (saved && saved.name) {
@@ -167,28 +192,28 @@ export function usePlayerAuth(notify: (msg: string) => void) {
           setPlayer(withBonus);
           saveProfile(withBonus);
         }
+        serverLoadDone.current = true;
       } finally {
         clearTimeout(fallback);
         setIsLoading(false);
-        setServerLoadDone(true);
         notifyGameReady();
       }
     })();
-  }, [checkDailyBonus]);
+  }, [checkDailyBonus, relabelQuests]);
 
-  // Автосохранение — только после завершения первоначальной загрузки с сервера
+  // Автосохранение — только когда сервер уже загружен (serverLoadDone.current = true)
+  // Используем ref чтобы избежать race condition с первым рендером
+  const prevPlayerRef = useRef<PlayerData | null>(null);
   useEffect(() => {
-    if (!serverLoadDone) return;
+    // Игнорируем первый рендер (до загрузки сервера) и неизменившийся state
+    if (!serverLoadDone.current) return;
+    if (prevPlayerRef.current === player) return;
+    prevPlayerRef.current = player;
+
     if (!player.name) return;
     saveProfile(player);
-    if (player.password) {
-      apiAuth('save', { name: player.name, password: player.password, profile: profileToSavePayload(player) }).catch(() => {});
-    } else if (localPlayerId.startsWith('ya_')) {
-      apiAuth('save_ya', { yaId: localPlayerId, profile: profileToSavePayload(player) }).catch(() => {});
-    } else if (player.name && player.name !== 'Игрок') {
-      apiAuth('save_anon', { playerId: getOrCreateAnonId(), profile: profileToSavePayload(player) }).catch(() => {});
-    }
-  }, [player, localPlayerId, serverLoadDone]);
+    persistToServer(pidRef.current || localPlayerId, player);
+  }, [player, localPlayerId]);
 
   const resolvePlayer = useCallback(async (): Promise<{ pid: string; displayName: string } | null> => {
     let pid = localPlayerId;
@@ -208,6 +233,7 @@ export function usePlayerAuth(notify: (msg: string) => void) {
         pid = ya.id;
         if (!savedNick && (!ya.name || ya.name.length > 16 || ya.name.length < 2)) {
           setLocalPlayerId(pid);
+          pidRef.current = pid;
           setNeedNickname(true);
           return null;
         }
@@ -216,6 +242,7 @@ export function usePlayerAuth(notify: (msg: string) => void) {
         pid = `user_${player.name}`;
       }
       setLocalPlayerId(pid);
+      pidRef.current = pid;
     }
 
     if (!displayName || displayName.length < 2) {
