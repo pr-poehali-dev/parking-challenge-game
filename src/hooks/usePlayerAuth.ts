@@ -106,7 +106,8 @@ export function usePlayerAuth(notify: (msg: string) => void) {
     const fallback = setTimeout(() => {
       serverLoadDone.current = true;
       setIsLoading(false);
-    }, 5000);
+      notifyGameReady();
+    }, 8000);
 
     (async () => {
       try {

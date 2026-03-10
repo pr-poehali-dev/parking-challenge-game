@@ -115,13 +115,25 @@ function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
   ]);
 }
 
+async function waitForYaGames(ms: number): Promise<void> {
+  if (window.YaGames) return;
+  return new Promise(resolve => {
+    const deadline = Date.now() + ms;
+    const check = () => {
+      if (window.YaGames || Date.now() >= deadline) { resolve(); return; }
+      setTimeout(check, 100);
+    };
+    check();
+  });
+}
+
 export async function initYandexGames() {
-  if (window.YaGames) {
-    try {
-      _ysdk = await withTimeout(window.YaGames.init(), 3000);
-      window._yaSDK = _ysdk;
-    } catch { /* not in YG env or timeout */ }
-  }
+  try {
+    await waitForYaGames(3000);
+    if (!window.YaGames) return;
+    _ysdk = await withTimeout(window.YaGames.init(), 3000);
+    window._yaSDK = _ysdk;
+  } catch { /* not in YG env or timeout */ }
 }
 
 export function notifyGameReady() {
